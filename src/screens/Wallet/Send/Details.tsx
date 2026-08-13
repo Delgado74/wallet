@@ -19,6 +19,7 @@ import { extractError } from '../../../lib/error'
 import LoadingLogo from '../../../components/LoadingLogo'
 import { consoleError } from '../../../lib/logs'
 import { LimitsContext } from '../../../providers/limits'
+import { AspContext } from '../../../providers/asp'
 import { FeesContext } from '../../../providers/fees'
 import { buildTransactionAmountDisplay } from '../../../lib/transactionAmountDisplay'
 import { useAmountDisplayContext } from '../../../hooks/useTransactionAmountDisplay'
@@ -32,8 +33,9 @@ export default function SendDetails() {
   const { calcOnchainOutputFee } = useContext(FeesContext)
   const isAssetSend = Boolean(sendInfo.account || sendInfo.assets?.length)
   const { utxoTxsAllowed, vtxoTxsAllowed } = useContext(LimitsContext)
-  const { assetMetadataCache, balance, reloadWallet, svcWallet } = useContext(WalletContext)
+const { assetMetadataCache, balance, reloadWallet, svcWallet } = useContext(WalletContext)
   const { trackLnSend } = useContext(LnSwapsContext)
+  const { aspInfo } = useContext(AspContext)
 
   const assetId = sendInfo.account?.assetId ?? sendInfo.assets?.[0]?.assetId
   const assetMeta = assetId ? assetMetadataCache.get(assetId) : undefined
@@ -158,7 +160,7 @@ export default function SendDetails() {
    * match what is actually true.
    */
   const payLightning = async (request: LnSendRequest) => {
-    const txid = await sendOffChain(svcWallet!, request.fundAmount, request.address)
+    const txid = await sendOffChain(svcWallet!, request.fundAmount, request.address, aspInfo.dust)
     if (!txid) return handleError('Error sending transaction')
     // Hand the swap over before `handleTxid` triggers the refresh that rebuilds
     // history: the record is what makes this row a Lightning send rather than a
@@ -194,7 +196,7 @@ export default function SendDetails() {
         .catch(handleError)
     } else if (arkAddress) {
       if (!details.total) return handleError('Missing total amount')
-      sendOffChain(svcWallet, details.total, arkAddress)
+      sendOffChain(svcWallet, details.total, arkAddress, aspInfo.dust)
         .then((txId: string) => handleTxid(txId))
         .catch(handleError)
     } else if (invoice && pendingLnSend) {
