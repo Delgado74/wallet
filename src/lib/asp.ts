@@ -271,8 +271,41 @@ export const sendAssets = async (wallet: IWallet, address: string, assets: Asset
   return wallet.send(recipients[0])
 }
 
-export const sendOffChain = async (wallet: IWallet, amount: number, address: string): Promise<string> => {
-  return wallet.send({ address, amount })
+export const sendOffChain = async (
+  wallet: IWallet,
+  amount: number,
+  address: string,
+  dust: bigint,
+): Promise<string> => {
+  const dustAmount = Number(dust)
+  const virtualCoins = await wallet.getVtxos({ withRecoverable: false })
+  const sortedCoins = [...virtualCoins].sort(byExpiryAsc)
+
+  const selectedVtxos: ExtendedVirtualCoin[] = []
+  let selectedAmount = 0
+
+  for (const coin of sortedCoins) {
+    selectedVtxos.push(coin)
+    selectedAmount += coin.value
+    if (selectedAmount >= amount) break
+  }
+
+  if (selectedAmount < amount) throw new Error('Insufficient funds')
+
+  // Avoid leaving sub-dust change: when the change would fall below the dust
+  // threshold, pull in additional vtxos so the change stays spendable.
+  let changeAmount = selectedAmount - amount
+  if (changeAmount > 0 && changeAmount < dustAmount) {
+    for (const coin of sortedCoins) {
+      if (selectedVtxos.includes(coin)) continue
+      selectedVtxos.push(coin)
+      selectedAmount += coin.value
+      changeAmount = selectedAmount - amount
+      if (changeAmount >= dustAmount) break
+    }
+  }
+
+  return wallet.sendBitcoin({ address, amount, selectedVtxos })
 }
 
 export const getInputsToSettle = async (

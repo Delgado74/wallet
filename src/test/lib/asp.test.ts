@@ -29,7 +29,15 @@ vi.mock('@arkade-os/sdk', async (importOriginal) => {
 })
 
 import { ArkNote } from '@arkade-os/sdk'
-import { getAspInfo, aspErrorText, emptyAspInfo, byExpiryAsc, getTxHistory, redeemNotes } from '../../lib/asp'
+import {
+  getAspInfo,
+  aspErrorText,
+  emptyAspInfo,
+  byExpiryAsc,
+  getTxHistory,
+  redeemNotes,
+  sendOffChain,
+} from '../../lib/asp'
 import { saveTransactionActivityMetadata } from '../../lib/storage'
 import { walletFingerprint } from '../../lib/sentry'
 import fixtures from '../fixtures.json'
@@ -86,6 +94,49 @@ describe('getAspInfo', () => {
     const info = await getAspInfo('down.example.com')
     expect(info.unreachable).toBe(true)
     expect(info.outdated).toBeFalsy()
+  })
+})
+
+describe('sendOffChain', () => {
+  const mkCoin = (id: string, value: number, expiresAt?: number) => ({
+    id,
+    value,
+    expiresAt: expiresAt ? new Date(expiresAt) : undefined,
+  })
+
+  const mkWallet = (vtxos: any[]) => {
+    const sendBitcoin = vi.fn().mockResolvedValue('txid')
+    return {
+      getVtxos: vi.fn().mockResolvedValue(vtxos),
+      sendBitcoin,
+      _sendBitcoin: sendBitcoin,
+    }
+  }
+
+  it('selects vtxos covering the amount without sub-dust change', async () => {
+    // 600+500 = 1100 covers 1000 but leaves 100 < dust(330); pulls in the 300
+    // so the change (400) stays spendable.
+    const wallet = mkWallet([mkCoin('a', 600), mkCoin('b', 500), mkCoin('c', 300)])
+    await sendOffChain(wallet as any, 1000, 'addr', BigInt(330))
+    const params = wallet._sendBitcoin.mock.calls[0][0]
+    expect(params.amount).toBe(1000)
+    expect(params.address).toBe('addr')
+    expect(params.selectedVtxos.map((c: any) => c.id)).toEqual(['a', 'b', 'c'])
+    const sum = params.selectedVtxos.reduce((acc: number, c: any) => acc + c.value, 0)
+    expect(sum - 1000).toBeGreaterThanOrEqual(330)
+  })
+
+  it('keeps exact coverage when change is at or above dust', async () => {
+    const wallet = mkWallet([mkCoin('a', 1500), mkCoin('b', 500)])
+    await sendOffChain(wallet as any, 1000, 'addr', BigInt(330))
+    const params = wallet._sendBitcoin.mock.calls[0][0]
+    expect(params.selectedVtxos.map((c: any) => c.id)).toEqual(['a'])
+  })
+
+  it('throws insufficient funds when vtxos cannot cover the amount', async () => {
+    const wallet = mkWallet([mkCoin('a', 400)])
+    await expect(sendOffChain(wallet as any, 1000, 'addr', BigInt(330))).rejects.toThrow('Insufficient funds')
+    expect(wallet._sendBitcoin).not.toHaveBeenCalled()
   })
 })
 

@@ -18,6 +18,7 @@ import { extractError } from '../../../lib/error'
 import LoadingLogo from '../../../components/LoadingLogo'
 import { consoleError } from '../../../lib/logs'
 import { LimitsContext } from '../../../providers/limits'
+import { AspContext } from '../../../providers/asp'
 import { FeesContext } from '../../../providers/fees'
 import { buildTransactionAmountDisplay } from '../../../lib/transactionAmountDisplay'
 import { useAmountDisplayContext } from '../../../hooks/useTransactionAmountDisplay'
@@ -32,6 +33,7 @@ export default function SendDetails() {
   const { calcOnchainOutputFee } = useContext(FeesContext)
   const isAssetSend = Boolean(sendInfo.account || sendInfo.assets?.length)
   const { utxoTxsAllowed, vtxoTxsAllowed } = useContext(LimitsContext)
+  const { aspInfo } = useContext(AspContext)
   const { assetMetadataCache, balance, svcWallet } = useContext(WalletContext)
 
   const assetId = sendInfo.account?.assetId ?? sendInfo.assets?.[0]?.assetId
@@ -150,7 +152,7 @@ export default function SendDetails() {
    * match what is actually true.
    */
   const payLightning = async (request: LnSendRequest) => {
-    const txid = await sendOffChain(svcWallet!, request.fundAmount, request.address)
+    const txid = await sendOffChain(svcWallet!, request.fundAmount, request.address, aspInfo.dust)
     if (!txid) return handleError('Error sending transaction')
     // Record the covenant against the funding txid: it is the only handle on
     // the spend that ends this swap, and it stops being derivable the moment
@@ -176,7 +178,7 @@ export default function SendDetails() {
         .catch(handleError)
     } else if (arkAddress) {
       if (!details.total) return handleError('Missing total amount')
-      sendOffChain(svcWallet, details.total, arkAddress)
+      sendOffChain(svcWallet, details.total, arkAddress, aspInfo.dust)
         .then((txId: string) => handleTxid(txId))
         .catch(handleError)
     } else if (invoice && pendingLnSend) {
