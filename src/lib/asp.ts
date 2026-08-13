@@ -271,12 +271,7 @@ export const sendAssets = async (wallet: IWallet, address: string, assets: Asset
   return wallet.send(recipients[0])
 }
 
-export const sendOffChain = async (
-  wallet: IWallet,
-  amount: number,
-  address: string,
-  dust: bigint,
-): Promise<string> => {
+export const sendOffChain = async (wallet: IWallet, amount: number, address: string, dust: bigint): Promise<string> => {
   const dustAmount = Number(dust)
   const virtualCoins = await wallet.getVtxos({ withRecoverable: false })
   const sortedCoins = [...virtualCoins].sort(byExpiryAsc)
