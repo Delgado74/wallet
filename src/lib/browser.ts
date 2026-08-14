@@ -13,6 +13,12 @@ export const isAndroid = (): boolean => {
 export const isInAppBrowser = (): boolean => {
   const ua = navigator.userAgent || navigator.vendor || (window as any).opera || ''
 
+  // A Capacitor native wrapper (Android/iOS app) is our own app, not an
+  // in-app browser: its WebView UA contains the generic "; wv)" marker that
+  // would otherwise trip the WebView checks below.
+  const capacitor = (window as any).Capacitor
+  if (capacitor && typeof capacitor.isNativePlatform === 'function' && capacitor.isNativePlatform()) return false
+
   // Known in-app browser tokens (sorted by global user base)
   if (
     /FBAN|FBAV|Instagram|Twitter|Line\/|Snapchat|LinkedIn|Reddit|Pinterest|TikTok|Telegram|WhatsApp|Weibo|MicroMessenger|Barcelona|Viber|KAKAOTALK|GSA\/|musical_ly|BytedanceWebview|Bytedance|baiduboxapp|baidubrowser|MQQBrowser|\bQQ\/|Flipboard/i.test(
