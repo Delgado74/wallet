@@ -12,6 +12,7 @@ describe('getCurrency', () => {
     ['pt-BR', Currencies.BRL],
     ['ja-JP', Currencies.JPY],
     ['zh-CN', Currencies.CNY],
+    ['es-CU', Currencies.CUP],
     ['en-US', Currencies.USD],
   ])('maps %s to %s', (locale, expected) => {
     expect(getCurrency(locale)).toBe(expected)
