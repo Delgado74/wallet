@@ -10,13 +10,12 @@ import { consoleError } from '../../lib/logs'
 import { useLoadingStatus } from '../../hooks/useLoadingStatus'
 import { setLoadingStatus } from '../../lib/loadingStatus'
 import { NavigationContext, Pages } from '../../providers/navigation'
-import { useTranslation } from '../../providers/language'
+import ErrorMessage from '../../components/Error'
 
 export default function InitConnect() {
   const { initInfo, setInitInfo } = useContext(FlowContext)
   const { navigate } = useContext(NavigationContext)
   const { initWallet } = useContext(WalletContext)
-  const { t } = useTranslation()
 
   const loadingStatus = useLoadingStatus()
   const [error, setError] = useState<string>()
@@ -37,7 +36,7 @@ export default function InitConnect() {
         .catch(abortConnectionWithError)
     } else if (privateKey) {
       setPrivateKey(privateKey, password)
-        .then(() => initWallet({ privateKey, restoring: initInfo.restoring }))
+        .then(() => initWallet({ privateKey }))
         .then(() => setInitialized(true))
         .catch(abortConnectionWithError)
     }
@@ -54,17 +53,21 @@ export default function InitConnect() {
 
   const abortConnectionWithError = (err: any) => {
     consoleError(err, 'Error during connection:')
-    setLoadingStatus(t('init.connectionFailed'))
-    setError(t('init.connectionFailed'))
+    const message = err instanceof Error ? err.message : String(err)
+    setLoadingStatus('Connection failed')
+    setError(message)
     setConnectDone(true)
+    // TEMP diagnostic: surface the real error in the Capacitor WebView
+    alert(`Connection failed: ${message}`)
   }
 
   return (
     <>
-      <Header text={t('init.connectingToServer')} />
+      <Header text='Connecting to server' />
       <Content>
+        {error ? <ErrorMessage error text={error} /> : null}
         <LoadingLogo
-          text={loadingStatus || t('init.connectingToServerStatus')}
+          text={loadingStatus || 'Connecting to server'}
           exitMode={connectDone ? 'fly-up' : 'none'}
           onExitComplete={handleExitComplete}
           done={connectDone}
