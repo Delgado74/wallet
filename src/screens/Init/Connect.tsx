@@ -10,6 +10,7 @@ import { consoleError } from '../../lib/logs'
 import { useLoadingStatus } from '../../hooks/useLoadingStatus'
 import { setLoadingStatus } from '../../lib/loadingStatus'
 import { NavigationContext, Pages } from '../../providers/navigation'
+import ErrorMessage from '../../components/Error'
 
 export default function InitConnect() {
   const { initInfo, setInitInfo } = useContext(FlowContext)
@@ -52,15 +53,19 @@ export default function InitConnect() {
 
   const abortConnectionWithError = (err: any) => {
     consoleError(err, 'Error during connection:')
+    const message = err instanceof Error ? err.message : String(err)
     setLoadingStatus('Connection failed')
-    setError('Connection failed')
+    setError(message)
     setConnectDone(true)
+    // TEMP diagnostic: surface the real error in the Capacitor WebView
+    alert(`Connection failed: ${message}`)
   }
 
   return (
     <>
       <Header text='Connecting to server' />
       <Content>
+        {error ? <ErrorMessage error text={error} /> : null}
         <LoadingLogo
           text={loadingStatus || 'Connecting to server'}
           exitMode={connectDone ? 'fly-up' : 'none'}
