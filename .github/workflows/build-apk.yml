@@ -51,6 +51,9 @@ jobs:
       - name: Prepare Android manifest (camera + ML Kit)
         run: node scripts/prepare-android.mjs
 
+      - name: Prepare service worker routing in MainActivity
+        run: node scripts/prepare-service-worker.mjs
+
       - name: Verify camera permissions in manifest
         run: |
           grep -q 'android.permission.CAMERA' android/app/src/main/AndroidManifest.xml
