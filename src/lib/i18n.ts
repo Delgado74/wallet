@@ -345,6 +345,10 @@ export const translations = {
       copyAddress: 'Copy address',
       requestingAmount: 'Requesting {amount} {unit}',
       copyAria: 'Copy {title}',
+      shortUnified: 'Unified',
+      shortArk: 'Ark',
+      shortBtc: 'BTC',
+      shortInvoice: 'Invoice',
     },
     scanner: {
       pointAtQr: 'Point at the QR code',
@@ -905,6 +909,10 @@ export const translations = {
       copyAddress: 'Copiar dirección',
       requestingAmount: 'Solicitando {amount} {unit}',
       copyAria: 'Copiar {title}',
+      shortUnified: 'Unificado',
+      shortArk: 'Ark',
+      shortBtc: 'BTC',
+      shortInvoice: 'Factura',
     },
     scanner: {
       pointAtQr: 'Apunta al código QR',

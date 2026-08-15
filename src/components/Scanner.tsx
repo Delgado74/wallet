@@ -125,6 +125,7 @@ function ScannerNative({
             cancelled = true
             stop()
             onData(raw)
+            onClose()
           }
         })
 
