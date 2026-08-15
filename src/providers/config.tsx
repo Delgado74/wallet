@@ -6,6 +6,7 @@ import { normalizeBitcoinUnit } from '../lib/format'
 import { setHapticsEnabled } from '../lib/haptics'
 import { getCurrency } from '@/lib/language'
 import { detectLanguage } from './language'
+import { setDocumentThemeColor } from '../lib/documentSurface'
 
 const defaultConfig: Config = {
   announcementsSeen: [],
@@ -105,7 +106,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
     else root.classList.remove(darkPalette)
 
     const themeColor = resolved === Themes.Dark ? '#101010' : '#fff'
-    document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute('content', themeColor)
+    setDocumentThemeColor(themeColor)
   }
 
   // TODO: the full-object contract is a stale-closure hazard — a caller that

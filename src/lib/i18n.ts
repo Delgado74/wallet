@@ -106,6 +106,8 @@ export const translations = {
         "Get notified when an update is available or a payment is received. You'll need to grant permission if asked.",
       notificationsUnsupported:
         "Your browser does not support the Notifications API. If on iOS you'll need to 'Add to homescreen' and be running iOS 16.4 or higher.",
+      notificationsApiUnsupported: 'Notifications API not supported',
+      notificationsPermissionDenied: 'Notifications permission denied',
       changePassword: 'Change password',
       success: 'Success',
       lock: 'Lock',
@@ -658,6 +660,8 @@ export const translations = {
         'Recibe una notificación cuando haya una actualización o llegue un pago. Se pedirá tu permiso si es necesario.',
       notificationsUnsupported:
         'Tu navegador no soporta la API de Notificaciones. En iOS necesitas "Añadir a pantalla de inicio" y tener iOS 16.4 o superior.',
+      notificationsApiUnsupported: 'La API de Notificaciones no es compatible',
+      notificationsPermissionDenied: 'Permiso de notificaciones denegado',
       changePassword: 'Cambiar contraseña',
       success: 'Éxito',
       lock: 'Bloqueo',

@@ -7,22 +7,31 @@ import Header from './Header'
 import Content from '../../components/Content'
 import Toggle from '../../components/Toggle'
 import { useTranslation } from '../../providers/language'
+import { useToast } from '../../components/Toast'
 
 export default function Notifications() {
   const { backupAndUpdateConfig } = useContext(BackupContext)
   const { config } = useContext(ConfigContext)
   const { t } = useTranslation()
 
+  const { toast } = useToast()
+
   const handleChange = async () => {
-    if (!notificationApiSupport) return
-    if (!config.notifications) {
-      requestPermission().then(async (notifications) => {
-        if (notifications) sendTestNotification()
-        backupAndUpdateConfig({ ...config, notifications })
-      })
-    } else {
+    if (config.notifications) {
       backupAndUpdateConfig({ ...config, notifications: false })
+      return
     }
+
+    if (!notificationApiSupport) {
+      toast(t('settings.notificationsApiUnsupported'))
+      return
+    }
+
+    requestPermission().then((notifications) => {
+      if (notifications) sendTestNotification()
+      else toast(t('settings.notificationsPermissionDenied'))
+      backupAndUpdateConfig({ ...config, notifications })
+    })
   }
 
   const subText = notificationApiSupport ? t('settings.notificationsIntro') : t('settings.notificationsUnsupported')

@@ -308,6 +308,9 @@ export default function ReceiveQRCode() {
   const handleShare = () => {
     setSharing(true)
     shareData(data)
+      .then(() => {
+        if (!canBrowserShareData(data)) toast(t('common.copiedToClipboard'))
+      })
       .catch(consoleError)
       .finally(() => setSharing(false))
   }
@@ -370,7 +373,7 @@ export default function ReceiveQRCode() {
   }
 
   const data = { title: t('wallet.receive'), text: qrCodeValue }
-  const shareDisabled = !canBrowserShareData(data) || sharing || hasError || noPaymentMethods
+  const shareDisabled = sharing || hasError || noPaymentMethods
 
   // Whether an amount is currently requested. Keyed off assetMeta to match how
   // handleAmountConfirm/handleAmountClear decide between asset units and sats.
