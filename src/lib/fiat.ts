@@ -30,6 +30,14 @@ export const fiatDecimalsFor = (currency: Currencies, bitcoinUnit = Unit.BTC): n
 
 export const getPriceFeed = async (): Promise<FiatPrices | undefined> => {
   try {
+    const yadio = await fetchYadioPrices()
+    if (yadio) return yadio
+  } catch (err) {
+    consoleError(err, 'error fetching fiat prices from yadio')
+  }
+
+  // Fallback provider for regions where Yadio.io is unreachable.
+  try {
     const resp = await fetch('https://blockchain.info/ticker')
     const json = await resp.json()
     return {
@@ -44,6 +52,26 @@ export const getPriceFeed = async (): Promise<FiatPrices | undefined> => {
     }
   } catch (err) {
     consoleError(err, 'error fetching fiat prices')
+  }
+}
+
+// Yadio.io is the primary feed: it publishes the real BTC->CUP rate (derived
+// from the USD/CUP relationship on the Cuban market) plus every other currency
+// in one response, so a single fetch covers the whole wallet.
+const fetchYadioPrices = async (): Promise<FiatPrices | undefined> => {
+  const resp = await fetch('https://api.yadio.io/exrates/BTC')
+  const json = await resp.json()
+  const btc = json?.BTC
+  if (!btc) return undefined
+  return {
+    eur: btc.EUR,
+    usd: btc.USD,
+    chf: btc.CHF,
+    jpy: btc.JPY,
+    gbp: btc.GBP,
+    cny: btc.CNY,
+    brl: btc.BRL,
+    cup: btc.CUP,
   }
 }
 
