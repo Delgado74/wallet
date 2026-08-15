@@ -145,6 +145,51 @@ body {
   text-size-adjust: none;
 }
 
+body.scanner-active {
+  background: transparent !important;
+}
+
+body.scanner-active #root {
+  display: none;
+}
+
+.scanner-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  z-index: 9999;
+  padding: 0 24px 48px;
+}
+
+.scanner-hint {
+  color: #fff;
+  margin-bottom: 16px;
+  font-size: 14px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+.scanner-error {
+  color: #e74c3c;
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.scanner-retry {
+  width: 200px;
+  margin-bottom: 16px;
+}
+
+.scanner-cancel {
+  width: 200px;
+}
+
 p {
   &.first-letter::first-letter {
     text-transform: uppercase;
