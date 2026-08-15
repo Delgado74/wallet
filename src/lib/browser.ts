@@ -10,14 +10,18 @@ export const isAndroid = (): boolean => {
   return /Android/.test(userAgent)
 }
 
+export const isNativePlatform = (): boolean => {
+  const capacitor = (window as any).Capacitor
+  return Boolean(capacitor && typeof capacitor.isNativePlatform === 'function' && capacitor.isNativePlatform())
+}
+
 export const isInAppBrowser = (): boolean => {
   const ua = navigator.userAgent || navigator.vendor || (window as any).opera || ''
 
   // A Capacitor native wrapper (Android/iOS app) is our own app, not an
   // in-app browser: its WebView UA contains the generic "; wv)" marker that
   // would otherwise trip the WebView checks below.
-  const capacitor = (window as any).Capacitor
-  if (capacitor && typeof capacitor.isNativePlatform === 'function' && capacitor.isNativePlatform()) return false
+  if (isNativePlatform()) return false
 
   // Known in-app browser tokens (sorted by global user base)
   if (
