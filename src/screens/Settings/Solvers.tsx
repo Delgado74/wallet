@@ -15,6 +15,7 @@ import { AssetSwapsContext } from '@/providers/assetSwaps'
 import { consoleError } from '@/lib/logs'
 import { BackupContext } from '@/providers/backup'
 import { BUNDLED_CARDS } from '@/lib/swapMarkets'
+import { useTranslation } from '@/providers/language'
 
 const addSolverCard = (input: LocalCardInput) => {
   const existingCards = readSolverCardsFromStorage()
@@ -42,6 +43,7 @@ function Button({ onClick, text }: { onClick?: () => void; text: string }) {
 
 function Editor({ card, toClose, onChange }: { card?: Card; toClose?: () => void; onChange?: () => void }) {
   const { aspInfo } = useContext(AspContext)
+  const { t } = useTranslation()
 
   const [error, setError] = useState<string>('')
 
@@ -56,14 +58,14 @@ function Editor({ card, toClose, onChange }: { card?: Card; toClose?: () => void
     try {
       card = JSON.parse(inputValue)
     } catch (err) {
-      setError(`invalid JSON: ${(err as Error).message}`)
+      setError(t('solvers.invalidJson', { message: (err as Error).message }))
       return
     }
     try {
       const result = validateCard(card)
       if (!result.ok) throw new Error(result.errors.join('; '))
     } catch (err) {
-      setError(`invalid card: ${(err as Error).message}`)
+      setError(t('solvers.invalidCard', { message: (err as Error).message }))
       return
     }
     // if the card name changed, remove the old card so it doesn't linger in storage
@@ -85,7 +87,7 @@ function Editor({ card, toClose, onChange }: { card?: Card; toClose?: () => void
       addSolverCard(input)
     } catch (err) {
       consoleError(err, 'failed to save solver card')
-      setError('Failed to save card: storage is full or unavailable.')
+      setError(t('solvers.failedSave'))
       return
     }
     onChange()
@@ -113,10 +115,10 @@ function Editor({ card, toClose, onChange }: { card?: Card; toClose?: () => void
         placeholder='{ version: 0, name: "My Card", markets: [...] }'
         defaultValue={card ? JSON.stringify(card, null, 2) : ''}
       />
-      {toClose && onChange ? (
+{toClose && onChange ? (
         <FlexRow>
-          <Button onClick={() => toClose()} text='Cancel' />
-          <Button onClick={() => saveCard(card)} text='Save' />
+          <Button onClick={() => toClose()} text={t('common.cancel')} />
+          <Button onClick={() => saveCard(card)} text={t('components.save')} />
         </FlexRow>
       ) : null}
     </FlexCol>
@@ -129,6 +131,7 @@ function Editor({ card, toClose, onChange }: { card?: Card; toClose?: () => void
  * stored copy — a user who wants different terms adds their own card.
  */
 function BundledCardLine({ input }: { input: LocalCardInput }) {
+  const { t } = useTranslation()
   const card = input.card as Card
   const pairs = card.markets?.map((m) => m.pair).join(', ') ?? ''
   const [showCard, setShowCard] = useState(false)
@@ -145,9 +148,9 @@ function BundledCardLine({ input }: { input: LocalCardInput }) {
             <Text>{input.label ?? card.name}</Text>
             <TextSecondary>{pairs}</TextSecondary>
           </FlexCol>
-          <FlexRow end minWidth='60px'>
+<FlexRow end minWidth='60px'>
             <div onClick={toggleShowCard} style={{ cursor: 'pointer' }}>
-              <TextSecondary>Built-in</TextSecondary>
+              <TextSecondary>{t('solvers.builtIn')}</TextSecondary>
             </div>
           </FlexRow>
         </FlexRow>
@@ -158,6 +161,7 @@ function BundledCardLine({ input }: { input: LocalCardInput }) {
 }
 
 function CardLine({ input, onChange }: { input: LocalCardInput; onChange: () => void }) {
+  const { t } = useTranslation()
   const [confirmRemove, setConfirmRemove] = useState(false)
   const [showEditor, setShowEditor] = useState(false)
   const [error, setError] = useState<string>('')
@@ -179,7 +183,7 @@ function CardLine({ input, onChange }: { input: LocalCardInput; onChange: () => 
       onChange()
     } catch (err) {
       consoleError(err, 'failed to remove solver card')
-      setError('Failed to remove card: storage is full or unavailable.')
+      setError(t('solvers.failedRemove'))
     }
   }
 
@@ -193,15 +197,15 @@ function CardLine({ input, onChange }: { input: LocalCardInput; onChange: () => 
             <FlexCol gap='1.5rem'>
               <FlexCol centered gap='0.5rem'>
                 <Text big bold>
-                  Confirm Remove
+                  {t('solvers.confirmRemove')}
                 </Text>
                 <Text centered wrap color='neutral-500'>
-                  Are you sure you want to remove the card "{input.label}"? This action cannot be undone.
+                  {t('solvers.removeWarning', { label: input.label ?? '' })}
                 </Text>
               </FlexCol>
               <FlexRow centered gap='1rem'>
-                <Button onClick={() => setConfirmRemove(false)} text='Cancel' />
-                <Button onClick={handleRemove} text='Remove' />
+                <Button onClick={() => setConfirmRemove(false)} text={t('common.cancel')} />
+                <Button onClick={handleRemove} text={t('solvers.remove')} />
               </FlexRow>
             </FlexCol>
           </div>
@@ -214,8 +218,8 @@ function CardLine({ input, onChange }: { input: LocalCardInput; onChange: () => 
             <TextSecondary>{pairs}</TextSecondary>
           </FlexCol>
           <FlexRow end>
-            <Button onClick={handleEdit} text='Edit' />
-            <Button onClick={handleConfirmRemove} text='Remove' />
+            <Button onClick={handleEdit} text={t('solvers.edit')} />
+            <Button onClick={handleConfirmRemove} text={t('solvers.remove')} />
           </FlexRow>
         </FlexRow>
         {showEditor ? <Editor card={card} toClose={() => setShowEditor(false)} onChange={onChange} /> : null}
@@ -228,6 +232,7 @@ export default function Solvers() {
   const { aspInfo } = useContext(AspContext)
   const { runDiscovery } = useContext(AssetSwapsContext)
   const { backupSolverCards } = useContext(BackupContext)
+  const { t } = useTranslation()
 
   const [localCards, setLocalCards] = useState<LocalCardInput[]>()
   const [showEditor, setShowEditor] = useState(false)
@@ -258,21 +263,26 @@ export default function Solvers() {
   const title =
     bundledCards.length > 0
       ? storedCount > 0
-        ? `${bundledCards.length} built-in solver card${bundledCards.length > 1 ? 's' : ''}, plus ${storedCount} of your own.`
-        : `This build ships ${bundledCards.length} solver card${bundledCards.length > 1 ? 's' : ''}; add your own to reach more solvers.`
+        ? t(bundledCards.length > 1 ? 'solvers.builtInPlusOwnPlural' : 'solvers.builtInPlusOwnSingular', {
+            builtIn: bundledCards.length,
+            own: storedCount,
+          })
+        : t(bundledCards.length > 1 ? 'solvers.buildShipsPlural' : 'solvers.buildShipsSingular', {
+            count: bundledCards.length,
+          })
       : storedCount > 0
-        ? `You have ${storedCount} solver card${storedCount > 1 ? 's' : ''} stored in your wallet.`
-        : 'You have no solver cards stored in your wallet.'
+        ? t(storedCount > 1 ? 'solvers.storedPlural' : 'solvers.storedSingular', { count: storedCount })
+        : t('solvers.noStoredCards')
 
   return (
     <>
-      <Header text='Solvers' back />
+      <Header text={t('settings.solvers')} back />
       <Content>
         <Padded>
           <FlexCol>
             <FlexRow between>
               <Text>{title}</Text>
-              <Button onClick={() => setShowEditor(true)} text='+ Add new' />
+              <Button onClick={() => setShowEditor(true)} text={t('solvers.addNew')} />
             </FlexRow>
             {showEditor ? <Editor toClose={() => setShowEditor(false)} onChange={handleChange} /> : null}
             {bundledCards.length > 0 ? (
