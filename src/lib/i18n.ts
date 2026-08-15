@@ -658,6 +658,13 @@ export const translations = {
     vtxos: {
       title: 'Virtual Coins',
       nextRenewal: 'Next Renewal',
+      renewVirtualCoins: 'Renew Virtual Coins',
+      belowDustLimit: 'Below dust limit',
+      completeBoardingAndRenew: 'Complete boarding & renew',
+      completeBoarding: 'Complete boarding',
+      failedToFetchCoins: 'Failed to fetch coins',
+      date: 'Date',
+      coins: 'Coins',
       renewing: 'Renewing',
       coinsRenewed: 'Coins renewed successfully',
       coinsWithAmount: 'Your virtual coins with amount and expiration',
@@ -672,6 +679,10 @@ export const translations = {
       swept: 'swept',
       unconfirmed: 'unconfirmed',
       expiringSoon: 'expiring soon',
+    },
+    logs: {
+      pressEnter: 'Pressing Enter enables keyboard navigation of the logs',
+      logAt: 'Log at {time} with message {msg}. Press Escape to exit keyboard navigation.',
     },
     apps: {
       satora: 'Satora',
@@ -1340,6 +1351,13 @@ export const translations = {
     vtxos: {
       title: 'Monedas virtuales',
       nextRenewal: 'Próxima renovación',
+      renewVirtualCoins: 'Renovar monedas virtuales',
+      belowDustLimit: 'Por debajo del límite de dust',
+      completeBoardingAndRenew: 'Completar boarding y renovar',
+      completeBoarding: 'Completar boarding',
+      failedToFetchCoins: 'Error al obtener monedas',
+      date: 'Fecha',
+      coins: 'Monedas',
       renewing: 'Renovando',
       coinsRenewed: 'Monedas renovadas correctamente',
       coinsWithAmount: 'Tus monedas virtuales con monto y vencimiento',
@@ -1354,6 +1372,10 @@ export const translations = {
       swept: 'barrido',
       unconfirmed: 'sin confirmar',
       expiringSoon: 'expira pronto',
+    },
+    logs: {
+      pressEnter: 'Al presionar Enter se activa la navegación por teclado de los registros',
+      logAt: 'Registro de {time} con el mensaje {msg}. Presiona Escape para salir de la navegación por teclado.',
     },
     apps: {
       satora: 'Satora',
