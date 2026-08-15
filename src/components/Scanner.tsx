@@ -146,11 +146,13 @@ function ScannerNative({
     }
 
     document.body.classList.add('scanner-active')
+    document.documentElement.classList.add('scanner-active')
     start()
 
     return () => {
       cancelled = true
       document.body.classList.remove('scanner-active')
+      document.documentElement.classList.remove('scanner-active')
       stop()
     }
   }, [attempt])
@@ -175,6 +177,7 @@ function ScannerNative({
         className='btn btn-secondary scanner-cancel'
         onClick={() => {
           document.body.classList.remove('scanner-active')
+          document.documentElement.classList.remove('scanner-active')
           onClose()
         }}
       >

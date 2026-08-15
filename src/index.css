@@ -149,7 +149,15 @@ body.scanner-active {
   background: transparent !important;
 }
 
+html.scanner-active {
+  background: transparent !important;
+}
+
 body.scanner-active #root {
+  display: none;
+}
+
+body.scanner-active::before {
   display: none;
 }
 
