@@ -25,6 +25,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { DevModeProvider } from './providers/devMode'
 import { AssetsProvider } from './providers/assets'
 import { BackupProvider } from './providers/backup'
+import { LanguageProvider } from './providers/language'
 
 // Register service worker updatefound listener to reload the page when a new service worker
 // is found thus preventing some nasty race conditions when updating the service worker.
@@ -56,7 +57,8 @@ root.render(
   <DevModeProvider>
     <NavigationProvider>
       <ConfigProvider>
-        <BackupProvider>
+        <LanguageProvider>
+          <BackupProvider>
           <AspProvider>
             <AssetsProvider>
               <NotificationsProvider>
@@ -91,6 +93,7 @@ root.render(
             </AssetsProvider>
           </AspProvider>
         </BackupProvider>
+        </LanguageProvider>
       </ConfigProvider>
     </NavigationProvider>
   </DevModeProvider>,

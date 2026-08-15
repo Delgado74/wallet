@@ -26,6 +26,7 @@ import RecentActivitySection from './RecentActivitySection'
 import { usePortfolioBalanceDisplay } from '../../hooks/usePortfolioBalanceDisplay'
 import { useReducedMotion } from '../../hooks/useReducedMotion'
 import { BackupContext } from '@/providers/backup'
+import { useTranslation } from '../../providers/language'
 
 export default function Wallet() {
   const { aspInfo } = useContext(AspContext)
@@ -34,6 +35,7 @@ export default function Wallet() {
   const { backupAndUpdateConfig } = useContext(BackupContext)
   const { isInitialLoad } = useContext(NavigationContext)
   const { nudge, nudgeCheckComplete } = useContext(NudgeContext)
+  const { t } = useTranslation()
 
   const [error, setError] = useState(false)
   const [homeScrolled, setHomeScrolled] = useState(false)
@@ -62,8 +64,8 @@ export default function Wallet() {
   const hasHomeNotices = Boolean(nudge || pwaBannerVisible)
 
   const pwaDescription = isIOS()
-    ? "Tap the share icon in Safari's toolbar, then 'Add to Home Screen'."
-    : "Tap 'Install' to add Arkade to your home screen."
+    ? t('wallet.installIosDescription')
+    : t('wallet.installAndroidDescription')
 
   const dismissPwaBanner = () => {
     if (!config) return
@@ -140,12 +142,12 @@ export default function Wallet() {
                   <DismissibleBanner
                     id='pwa-install'
                     icon={<HomeIcon />}
-                    title='Add Arkade to your home screen'
+                    title={t('wallet.addArkadeToHome')}
                     description={pwaDescription}
                     action={
                       canPromptInstall()
                         ? {
-                            label: 'Install',
+                            label: t('wallet.install'),
                             onClick: async () => {
                               const outcome = await promptPwaInstall().catch(() => null)
                               if (outcome) dismissPwaBanner()
@@ -161,7 +163,7 @@ export default function Wallet() {
             ) : null}
             {error ? (
               <WalletStaggerChild animate={shouldStagger}>
-                <ErrorMessage error={error} text={aspErrorText(aspInfo, 'Arkade server unreachable')} />
+                <ErrorMessage error={error} text={aspErrorText(aspInfo, t('init.arkadeServerUnreachable'))} />
               </WalletStaggerChild>
             ) : null}
             <WalletStaggerChild animate={shouldStagger} className='home-stack__section'>
