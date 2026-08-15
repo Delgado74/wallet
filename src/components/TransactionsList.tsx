@@ -46,7 +46,11 @@ const TransactionLine = ({
   const { assetMetadataCache } = useContext(WalletContext)
   const { t } = useTranslation()
 
-  const date = tx.createdAt ? prettyDate(tx.createdAt) : tx.boardingTxid ? t('transaction.unconfirmed') : t('common.unknown')
+  const date = tx.createdAt
+    ? prettyDate(tx.createdAt)
+    : tx.boardingTxid
+      ? t('transaction.unconfirmed')
+      : t('common.unknown')
   const swap = tx.type === 'swap'
   const swapStatus = swap ? swapStatusForTx(tx) : undefined
   const issuance = isIssuance(tx)

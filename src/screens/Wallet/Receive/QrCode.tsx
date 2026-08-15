@@ -539,7 +539,8 @@ const rfqId = recvInfo.pendingLnReceive?.rfqId
               handleCopy(v)
             }}
             copied={copied}
-          />        </FlexCol>
+          />{' '}
+        </FlexCol>
       </SheetModal>
     </>
   )

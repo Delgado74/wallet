@@ -43,5 +43,13 @@ export function usePortfolioBalanceDisplay() {
   // redundant secondary line.
   const showSecondary = config.currency !== Currencies.BTC
 
-  return { balance, maskedBalance, unit, secondaryBalance: secondary.amount, secondaryUnit: secondary.unit, maskedSecondary, showSecondary }
+  return {
+    balance,
+    maskedBalance,
+    unit,
+    secondaryBalance: secondary.amount,
+    secondaryUnit: secondary.unit,
+    maskedSecondary,
+    showSecondary,
+  }
 }

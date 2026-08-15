@@ -247,8 +247,7 @@ export default function Transaction() {
         fees: 0,
         fundedTxid: tx.assetSwap?.fundingTxid,
         priceRate: swapPriceRateLabel(tx),
-        spendLabel:
-          tx.assetSwap?.status === 'cancelled' ? t('transaction.cancelled') : t('transaction.completed'),
+        spendLabel: tx.assetSwap?.status === 'cancelled' ? t('transaction.cancelled') : t('transaction.completed'),
         spendTxid: tx.assetSwap?.fillTxid,
         status: swapStatusLabel(tx),
         swapFees: swapFeeAmount(tx),
