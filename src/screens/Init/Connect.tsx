@@ -11,11 +11,13 @@ import { useLoadingStatus } from '../../hooks/useLoadingStatus'
 import { setLoadingStatus } from '../../lib/loadingStatus'
 import { NavigationContext, Pages } from '../../providers/navigation'
 import ErrorMessage from '../../components/Error'
+import { useTranslation } from '../../providers/language'
 
 export default function InitConnect() {
   const { initInfo, setInitInfo } = useContext(FlowContext)
   const { navigate } = useContext(NavigationContext)
   const { initWallet } = useContext(WalletContext)
+  const { t } = useTranslation()
 
   const loadingStatus = useLoadingStatus()
   const [error, setError] = useState<string>()
@@ -54,20 +56,18 @@ export default function InitConnect() {
   const abortConnectionWithError = (err: any) => {
     consoleError(err, 'Error during connection:')
     const message = err instanceof Error ? err.message : String(err)
-    setLoadingStatus('Connection failed')
+    setLoadingStatus(t('init.connectionFailed'))
     setError(message)
     setConnectDone(true)
-    // TEMP diagnostic: surface the real error in the Capacitor WebView
-    alert(`Connection failed: ${message}`)
   }
 
   return (
     <>
-      <Header text='Connecting to server' />
+      <Header text={t('init.connectingToServer')} />
       <Content>
         {error ? <ErrorMessage error text={error} /> : null}
         <LoadingLogo
-          text={loadingStatus || 'Connecting to server'}
+          text={loadingStatus || t('init.connectingToServerStatus')}
           exitMode={connectDone ? 'fly-up' : 'none'}
           onExitComplete={handleExitComplete}
           done={connectDone}

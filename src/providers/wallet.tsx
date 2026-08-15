@@ -46,6 +46,7 @@ import { setLoadingStatus } from '../lib/loadingStatus'
 import { hex } from '@scure/base'
 import * as secp from '@noble/secp256k1'
 import { ConfigContext } from './config'
+import { detectLanguage, translate } from './language'
 import {
   defaultPassword,
   getDelegateUrlForNetwork,
@@ -465,14 +466,15 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const isFirstLoad = !hasLoadedOnce.current
     if (isFirstLoad) setLoadError(null)
     try {
-      if (isFirstLoad) setLoadingStatus('Fetching coins...')
+      if (isFirstLoad) setLoadingStatus(translate(config.language ?? detectLanguage(), 'loading.fetchingCoins'))
       const vtxos = await getVtxos(swWallet)
-      if (isFirstLoad) setLoadingStatus('Fetching transactions...')
+      if (isFirstLoad) setLoadingStatus(translate(config.language ?? detectLanguage(), 'loading.fetchingTransactions'))
       const txs = await getTxHistory(swWallet)
-      if (isFirstLoad) setLoadingStatus('Updating balance...')
+      if (isFirstLoad) setLoadingStatus(translate(config.language ?? detectLanguage(), 'loading.updatingBalance'))
       const { total, available, assets, availableAssets } = await getBalance(swWallet)
       // prefetch asset metadata before triggering re-renders
-      if (isFirstLoad && assets.length > 0) setLoadingStatus('Loading asset metadata...')
+      if (isFirstLoad && assets.length > 0)
+        setLoadingStatus(translate(config.language ?? detectLanguage(), 'loading.loadingAssetMetadata'))
       for (const ab of assets) {
         const cached = assetMetadataCache.current.get(ab.assetId)
         if (cached && Date.now() - cached.cachedAt < ASSET_METADATA_TTL_MS) continue
@@ -535,7 +537,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       minCheckpointExitDelaySeconds,
     } = params
     try {
-      setLoadingStatus('Starting wallet...')
+      setLoadingStatus(translate(config.language ?? detectLanguage(), 'loading.startingWallet'))
       const walletRepository = new IndexedDBWalletRepository()
       const contractRepository = new IndexedDBContractRepository()
 
@@ -566,7 +568,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       })()
 
       await Promise.all([walletRepository.getWalletState(), zombieCheck])
-      setLoadingStatus('Connecting to service worker...')
+      setLoadingStatus(translate(config.language ?? detectLanguage(), 'loading.connectingToServiceWorker'))
 
       const svcWallet = await ServiceWorkerWallet.setup({
         serviceWorkerPath: '/wallet-service-worker.mjs',
@@ -587,7 +589,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       })
 
       if (!skipMigration) {
-        setLoadingStatus('Migrating data...')
+        setLoadingStatus(translate(config.language ?? detectLanguage(), 'loading.migratingData'))
         try {
           const oldStorage = new IndexedDBStorageAdapter('arkade-service-worker')
           const walletStatus = await getMigrationStatus('wallet', oldStorage)
@@ -612,7 +614,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (restoring) {
-        setLoadingStatus('Recovering addresses...')
+        setLoadingStatus(translate(config.language ?? detectLanguage(), 'loading.recoveringAddresses'))
         try {
           await svcWallet.restore()
         } catch (err) {
@@ -701,7 +703,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       if (isTimeoutError && retryCount < maxRetries) {
         // exponential backoff: wait 1s, 2s, 4s, 8s, 16s for each retry
         const delay = Math.pow(2, retryCount) * 1000
-        setLoadingStatus('Retrying connection...')
+        setLoadingStatus(translate(config.language ?? detectLanguage(), 'loading.retryingConnection'))
         consoleError(
           new Error(
             `Service worker activation timed out, retrying in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`,
