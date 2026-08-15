@@ -268,4 +268,9 @@ describe('resolveQrValue', () => {
     expect(resolveQrValue('ark1stale', opts)).toBe('bitcoin:unified')
     expect(resolveQrValue('ark1addr', { ...opts, ark: '' })).toBe('bitcoin:unified')
   })
+
+  it('keeps a lightning invoice selection while that invoice is on offer', () => {
+    expect(resolveQrValue('lnbc1invoice', { ...opts, invoice: 'lnbc1invoice' })).toBe('lnbc1invoice')
+    expect(resolveQrValue('lnbc1invoice', opts)).toBe('bitcoin:unified')
+  })
 })

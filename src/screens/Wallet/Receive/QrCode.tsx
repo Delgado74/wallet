@@ -40,6 +40,7 @@ import { isMobileBrowser } from '../../../lib/browser'
 import Focusable from '../../../components/Focusable'
 import { useReducedMotion } from '../../../hooks/useReducedMotion'
 import ButtonsOnBottom from '../../../components/ButtonsOnBottom'
+import SegmentedControl from '../../../components/SegmentedControl'
 import { AssetOption, Unit } from '../../../lib/types'
 import { EASE_OUT_QUINT } from '../../../lib/animations'
 import { walletAssetPresentationForId } from '../../../lib/accountAssets'
@@ -56,10 +57,15 @@ import { useTranslation } from '../../../providers/language'
  * change), fall back to the unified BIP21 URI. This stops async rebuilds from
  * silently reverting the user's pick and copying the wrong thing.
  */
-export const resolveQrValue = (selected: string, options: { bip21: string; btc: string; ark: string }): string => {
-  const candidates = [options.bip21, options.btc, options.ark].filter(Boolean)
+export const resolveQrValue = (
+  selected: string,
+  options: { bip21: string; btc: string; ark: string; invoice?: string },
+): string => {
+  const candidates = [options.bip21, options.btc, options.ark, options.invoice ?? ''].filter(Boolean)
   return selected && candidates.includes(selected) ? selected : options.bip21
 }
+
+const RECEIVE_QR_METHOD_KEY = 'receive-qr-method'
 
 export default function ReceiveQRCode() {
   const { aspInfo } = useContext(AspContext)
@@ -102,7 +108,13 @@ export default function ReceiveQRCode() {
   const [arkAddress, setArkAddress] = useState(offchainAddr)
   const [btcAddress, setBtcAddress] = useState(boardingAddr)
   const [qrCodeValue, setQrCodeValue] = useState('')
-  const [selectedValue, setSelectedValue] = useState('')
+  const [selectedValue, setSelectedValue] = useState(() => {
+    try {
+      return localStorage.getItem(RECEIVE_QR_METHOD_KEY) ?? ''
+    } catch {
+      return ''
+    }
+  })
   const [bip21Uri, setBip21Uri] = useState('')
   const [lnReceiveError, setLnReceiveError] = useState('')
 
@@ -243,7 +255,7 @@ export default function ReceiveQRCode() {
     setBip21Uri(bip21)
     // Preserve an explicit copy-sheet selection across rebuilds; only fall back
     // to the unified URI when the selected value is no longer one we offer.
-    setQrCodeValue(resolveQrValue(selectedValue, { bip21, btc, ark }))
+    setQrCodeValue(resolveQrValue(selectedValue, { bip21, btc, ark, invoice: recvInfo.invoice ?? '' }))
   }, [
     assetAmount,
     addressesLoaded,
@@ -333,6 +345,16 @@ export default function ReceiveQRCode() {
     }
   }
 
+  const handleSelectQrMethod = (value: string) => {
+    setSelectedValue(value)
+    setQrCodeValue(value)
+    try {
+      localStorage.setItem(RECEIVE_QR_METHOD_KEY, value)
+    } catch {
+      /* ignore */
+    }
+  }
+
   const handleAmountConfirm = (value = amountTextValue, inputMode?: KeyboardInputMode) => {
     setShowKeys(false)
     setShowAmountSheet(false)
@@ -403,6 +425,17 @@ export default function ReceiveQRCode() {
   const amountLabel = hasAmount ? t('receive.editAmount') : t('receive.addAmount')
   const unitLabel = assetMeta ? assetPresentation.ticker : 'sats'
 
+  const qrOptions = [
+    ...(bip21Uri ? [{ label: t('receive.unified'), short: t('receive.shortUnified'), value: bip21Uri }] : []),
+    ...(arkAddress ? [{ label: t('receive.arkadeAddress'), short: t('receive.shortArk'), value: arkAddress }] : []),
+    ...(btcAddress ? [{ label: t('receive.bitcoinAddress'), short: t('receive.shortBtc'), value: btcAddress }] : []),
+    ...(recvInfo.invoice
+      ? [{ label: t('receive.lightningInvoice'), short: t('receive.shortInvoice'), value: recvInfo.invoice }]
+      : []),
+  ]
+  const activeQrLabel = qrOptions.find((o) => o.value === qrCodeValue)?.label ?? qrOptions[0]?.label
+  const activeQrShort = qrOptions.find((o) => o.value === qrCodeValue)?.short ?? qrOptions[0]?.short
+
   return (
     <>
       <Header text={t('wallet.receive')} back={() => navigate(Pages.Wallet)} />
@@ -418,6 +451,18 @@ export default function ReceiveQRCode() {
             <FlexCol gap='0.5rem' centered>
               {lnReceiveError ? (
                 <TextSecondary>{t('receive.lightningUnavailable', { error: lnReceiveError })}</TextSecondary>
+              ) : null}
+              {qrOptions.length > 1 ? (
+                <div style={{ width: '100%', maxWidth: '340px' }}>
+                  <SegmentedControl
+                    options={qrOptions.map((o) => o.short)}
+                    selected={activeQrShort ?? ''}
+                    onChange={(short) => {
+                      const opt = qrOptions.find((o) => o.short === short)
+                      if (opt) handleSelectQrMethod(opt.value)
+                    }}
+                  />
+                </div>
               ) : null}
               <button
                 type='button'
@@ -504,8 +549,7 @@ export default function ReceiveQRCode() {
             invoice={recvInfo.invoice ?? ''}
             onCopy={handleCopy}
             onSelect={(v) => {
-              setSelectedValue(v)
-              setQrCodeValue(v)
+              handleSelectQrMethod(v)
               handleCopy(v)
             }}
             copied={copied}
