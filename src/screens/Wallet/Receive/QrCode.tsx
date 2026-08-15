@@ -157,8 +157,14 @@ export default function ReceiveQRCode() {
     const bip21 = isAssetReceive
       ? encodeBip21Asset(ark, assetId, assetAmount, assetMeta?.metadata?.decimals)
       : encodeBip21(btc, ark, recvInfo.invoice ?? '', satoshis, '')
+    // Standalone ark/btc QRs carry the requested amount too, so scanning them
+    // pre-fills the payee amount instead of paying a bare address. Without an
+    // amount the plain address stays the copyable value.
+    const hasSatsAmount = !isAssetReceive && satoshis > 0
+    const arkQr = ark && !isAssetReceive ? (hasSatsAmount ? encodeBip21('', ark, '', satoshis) : ark) : ark
+    const btcQr = btc && !isAssetReceive ? (hasSatsAmount ? encodeBip21(btc, '', '', satoshis) : btc) : btc
 
-    return { ark, btc, bip21 }
+    return { ark: arkQr, btc: btcQr, bip21 }
   }
 
   /**
@@ -445,7 +451,6 @@ const rfqId = recvInfo.pendingLnReceive?.rfqId
       ? [{ label: t('receive.lightningInvoice'), short: t('receive.shortInvoice'), value: recvInfo.invoice }]
       : []),
   ]
-  const activeQrLabel = qrOptions.find((o) => o.value === qrCodeValue)?.label ?? qrOptions[0]?.label
   const activeQrShort = qrOptions.find((o) => o.value === qrCodeValue)?.short ?? qrOptions[0]?.short
 
   return (
