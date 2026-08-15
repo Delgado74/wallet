@@ -63,9 +63,7 @@ export default function Wallet() {
   const pwaBannerVisible = Boolean(nudgeCheckComplete && showPwaBanner)
   const hasHomeNotices = Boolean(nudge || pwaBannerVisible)
 
-  const pwaDescription = isIOS()
-    ? t('wallet.installIosDescription')
-    : t('wallet.installAndroidDescription')
+  const pwaDescription = isIOS() ? t('wallet.installIosDescription') : t('wallet.installAndroidDescription')
 
   const dismissPwaBanner = () => {
     if (!config) return

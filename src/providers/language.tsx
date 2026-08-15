@@ -26,11 +26,7 @@ export function getTranslationDict(language: Language): TranslationDict {
   return language === Language.Spanish ? translations.es : translations.en
 }
 
-export function translate(
-  language: Language,
-  key: string,
-  params?: Record<string, string | number>,
-): string {
+export function translate(language: Language, key: string, params?: Record<string, string | number>): string {
   const dict = getTranslationDict(language)
   const template = key.split('.').reduce<unknown>((acc, part) => {
     if (acc && typeof acc === 'object' && part in (acc as Record<string, unknown>)) {

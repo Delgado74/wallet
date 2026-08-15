@@ -14,15 +14,8 @@ const PortfolioHero = forwardRef<HTMLDivElement, PortfolioHeroProps>(function Po
   { collapseProgress = 0 },
   ref,
 ) {
-  const {
-    balance,
-    maskedBalance,
-    unit,
-    secondaryBalance,
-    secondaryUnit,
-    maskedSecondary,
-    showSecondary,
-  } = usePortfolioBalanceDisplay()
+  const { balance, maskedBalance, unit, secondaryBalance, secondaryUnit, maskedSecondary, showSecondary } =
+    usePortfolioBalanceDisplay()
   const clampedProgress = Math.max(0, Math.min(1, collapseProgress))
 
   return (

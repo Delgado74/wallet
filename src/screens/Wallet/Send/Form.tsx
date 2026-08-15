@@ -201,9 +201,7 @@ export default function SendForm() {
   const liquidBalance = Math.max(0, availableBalance - (reserveApplied ? DUST_AMOUNT : 0))
 
   const smartSetError = (str: string) => {
-    setError(
-      str === '' ? (aspInfo.unreachable ? aspErrorText(aspInfo, t('init.arkadeServerUnreachable')) : '') : str,
-    )
+    setError(str === '' ? (aspInfo.unreachable ? aspErrorText(aspInfo, t('init.arkadeServerUnreachable')) : '') : str)
   }
 
   // Prefer display-currency entry when conversion is available; otherwise
@@ -1099,12 +1097,12 @@ export default function SendForm() {
                       <FlexCol gap='0.25rem'>
                         {activeAsset ? (
                           <DropdownMenuItem className='send-asset-option' onClick={() => handleSelectAsset(null)}>
-                              <span className='send-asset-option__main'>
-                                <AssetIcon asset={null} />
-                                <span>
-                                  <span className='send-asset-option__name'>{t('send.bitcoin')}</span>
-                                </span>
+                            <span className='send-asset-option__main'>
+                              <AssetIcon asset={null} />
+                              <span>
+                                <span className='send-asset-option__name'>{t('send.bitcoin')}</span>
                               </span>
+                            </span>
                             <span className='send-asset-option__amount'>{prettyUnitBalance(liquidBalance)}</span>
                           </DropdownMenuItem>
                         ) : null}
@@ -1162,8 +1160,7 @@ export default function SendForm() {
               {tryingToSelfSend ? (
                 <div style={{ width: '100%' }}>
                   <Text centered color='neutral-500' small>
-                    {t('send.rolloverHint')}{' '}
-                    <a onClick={gotoRollover}>{t('send.rolloverVtxos')}</a>
+                    {t('send.rolloverHint')} <a onClick={gotoRollover}>{t('send.rolloverVtxos')}</a>
                     {t('send.rolloverHintSuffix')}
                   </Text>
                 </div>

@@ -506,7 +506,8 @@ export default function ReceiveQRCode() {
               handleCopy(v)
             }}
             copied={copied}
-          />        </FlexCol>
+          />{' '}
+        </FlexCol>
       </SheetModal>
     </>
   )

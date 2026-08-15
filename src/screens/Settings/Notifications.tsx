@@ -25,9 +25,7 @@ export default function Notifications() {
     }
   }
 
-  const subText = notificationApiSupport
-    ? t('settings.notificationsIntro')
-    : t('settings.notificationsUnsupported')
+  const subText = notificationApiSupport ? t('settings.notificationsIntro') : t('settings.notificationsUnsupported')
 
   return (
     <>

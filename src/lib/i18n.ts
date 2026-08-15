@@ -145,8 +145,7 @@ export const translations = {
       customerSupportText:
         'Get help with your wallet, report bugs, or ask questions. Our support team is here to assist you.',
       secureChat: 'Secure Chat',
-      secureChatText:
-        'Your conversations are secure and private. Chat history is maintained across sessions.',
+      secureChatText: 'Your conversations are secure and private. Chat history is maintained across sessions.',
       bugReports: 'Bug Reports',
       bugReportsText:
         'Report any issues or bugs you encounter. Include steps to reproduce the problem for faster resolution.',
@@ -204,8 +203,7 @@ export const translations = {
       retryCancel: 'Retry cancel',
       cancelSwap: 'Cancel swap',
       cancelSwapTitle: 'Cancel swap?',
-      cancelSwapBody:
-        'If the swap is still pending, this will return its locked funds to your wallet.',
+      cancelSwapBody: 'If the swap is still pending, this will return its locked funds to your wallet.',
       keepSwap: 'Keep swap',
       settle: 'Settle',
       renew: 'Renew',
@@ -277,8 +275,7 @@ export const translations = {
       payingToMainnet: 'Paying to mainnet',
       amountSent: 'Amount sent',
       confirmPayment: 'Confirm payment',
-      thisPaymentLeavesArkade:
-        'This payment leaves Arkade and settles on-chain, with on-chain fees.',
+      thisPaymentLeavesArkade: 'This payment leaves Arkade and settles on-chain, with on-chain fees.',
       to: 'To',
       confirmSignature: 'Confirm signature',
       sign: 'Sign',
@@ -393,8 +390,10 @@ export const translations = {
       forYourEyesOnly: 'For your eyes only, do not share.',
       copyToClipboard: 'Copy to clipboard',
       enoughToRestore: 'This is enough to restore your wallet.',
-      phraseWarning: "Your recovery phrase can be used to access everything in your wallet. Don't share it with anyone.",
-      privateKeyWarning: "Your private key can be used to access everything in your wallet. Don't share it with anyone.",
+      phraseWarning:
+        "Your recovery phrase can be used to access everything in your wallet. Don't share it with anyone.",
+      privateKeyWarning:
+        "Your private key can be used to access everything in your wallet. Don't share it with anyone.",
       enableNostrBackups: 'Enable Nostr backups',
       nostrBackupsSubtext: 'Turn Nostr backups on or off',
       viewPhrase: 'View phrase',
@@ -483,10 +482,8 @@ export const translations = {
     },
     delegate: {
       whatIsADelegate: 'What is a Delegate?',
-      delegateDescription:
-        'A delegate is a trusted third party you appoint to help keep your VTXOs safe and secure.',
-      delegatesRenewOnly:
-        'Delegates can only renew your VTXOs, they cannot spend your funds or control your wallet',
+      delegateDescription: 'A delegate is a trusted third party you appoint to help keep your VTXOs safe and secure.',
+      delegatesRenewOnly: 'Delegates can only renew your VTXOs, they cannot spend your funds or control your wallet',
       noDelegateFound: 'No delegate found for this network.',
       useDefaultArkadeDelegate: 'Use default Arkade delegate',
       useDefaultSubtext: "Use Arkade's default delegate to manage renewals",
@@ -542,8 +539,7 @@ export const translations = {
       firstExpiration: 'First virtual coin expiration: {time}.',
       automaticRenewal: 'Automatic renewal occurs for virtual coins expiring within {time}.',
       settlementFees: 'Settlement during market hours offers lower fees.',
-      nextMarketHour:
-        'Next market hour: {date} ({ago}) for {duration}.',
+      nextMarketHour: 'Next market hour: {date} ({ago}) for {duration}.',
       virtualCoinRenewal: 'Virtual Coin Renewal',
       settled: 'settled',
       subdust: 'subdust',
@@ -701,8 +697,7 @@ export const translations = {
       customerSupportText:
         'Obtén ayuda con tu wallet, reporta errores o haz preguntas. Nuestro equipo de soporte está aquí para ayudarte.',
       secureChat: 'Chat seguro',
-      secureChatText:
-        'Tus conversaciones son seguras y privadas. El historial se mantiene entre sesiones.',
+      secureChatText: 'Tus conversaciones son seguras y privadas. El historial se mantiene entre sesiones.',
       bugReports: 'Reportes de errores',
       bugReportsText:
         'Reporta cualquier problema o error que encuentres. Incluye pasos para reproducirlo para una resolución más rápida.',
@@ -760,8 +755,7 @@ export const translations = {
       retryCancel: 'Reintentar cancelación',
       cancelSwap: 'Cancelar swap',
       cancelSwapTitle: '¿Cancelar el swap?',
-      cancelSwapBody:
-        'Si el swap sigue pendiente, esto devolverá sus fondos bloqueados a tu wallet.',
+      cancelSwapBody: 'Si el swap sigue pendiente, esto devolverá sus fondos bloqueados a tu wallet.',
       keepSwap: 'Mantener swap',
       settle: 'Liquidar',
       renew: 'Renovar',
@@ -805,7 +799,8 @@ export const translations = {
       sent: 'Enviado',
       received: 'Recibido',
       keyboardNavHint: 'Presionar Enter habilita la navegación con teclado de la lista de transacciones',
-      keyboardNavAria: 'Transacción {type} por monto de {amount}. Presiona Escape para salir de la navegación con teclado.',
+      keyboardNavAria:
+        'Transacción {type} por monto de {amount}. Presiona Escape para salir de la navegación con teclado.',
     },
     send: {
       title: 'Enviar',
@@ -833,8 +828,7 @@ export const translations = {
       payingToMainnet: 'Pagando a mainnet',
       amountSent: 'Monto enviado',
       confirmPayment: 'Confirmar pago',
-      thisPaymentLeavesArkade:
-        'Este pago sale de Arkade y se liquida on-chain, con comisiones on-chain.',
+      thisPaymentLeavesArkade: 'Este pago sale de Arkade y se liquida on-chain, con comisiones on-chain.',
       to: 'Para',
       confirmSignature: 'Confirmar firma',
       sign: 'Firmar',
@@ -949,7 +943,8 @@ export const translations = {
       forYourEyesOnly: 'Solo para tus ojos, no lo compartas.',
       copyToClipboard: 'Copiar al portapapeles',
       enoughToRestore: 'Esto es suficiente para restaurar tu wallet.',
-      phraseWarning: 'Tu frase de recuperación puede usarse para acceder a todo en tu wallet. No la compartas con nadie.',
+      phraseWarning:
+        'Tu frase de recuperación puede usarse para acceder a todo en tu wallet. No la compartas con nadie.',
       privateKeyWarning: 'Tu clave privada puede usarse para acceder a todo en tu wallet. No la compartas con nadie.',
       enableNostrBackups: 'Activar respaldos Nostr',
       nostrBackupsSubtext: 'Activar o desactivar respaldos Nostr',
@@ -1098,8 +1093,7 @@ export const translations = {
       firstExpiration: 'Primer vencimiento de moneda virtual: {time}.',
       automaticRenewal: 'La renovación automática ocurre para monedas que expiran dentro de {time}.',
       settlementFees: 'La liquidación durante horas de mercado ofrece comisiones más bajas.',
-      nextMarketHour:
-        'Próxima hora de mercado: {date} ({ago}) por {duration}.',
+      nextMarketHour: 'Próxima hora de mercado: {date} ({ago}) por {duration}.',
       virtualCoinRenewal: 'Renovación de moneda virtual',
       settled: 'liquidado',
       subdust: 'subdust',
