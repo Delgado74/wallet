@@ -1,6 +1,6 @@
 import { walletAccountTicker, type WalletAccountTicker } from '../lib/accountAssets'
 
-export type TokenLogoTicker = 'BTC' | 'USD' | 'USDT' | 'USDC' | 'CHF' | 'BRL' | 'CNY' | 'EUR' | 'GBP' | 'JPY'
+export type TokenLogoTicker = 'BTC' | 'USD' | 'USDT' | 'USDC' | 'CHF' | 'BRL' | 'CNY' | 'CUP' | 'EUR' | 'GBP' | 'JPY'
 
 export function tokenLogoTickerForTicker(ticker: string | undefined): TokenLogoTicker | undefined {
   const normalized = ticker?.trim().toUpperCase()
@@ -12,6 +12,7 @@ export function tokenLogoTickerForTicker(ticker: string | undefined): TokenLogoT
     normalized === 'CHF' ||
     normalized === 'BRL' ||
     normalized === 'CNY' ||
+    normalized === 'CUP' ||
     normalized === 'EUR' ||
     normalized === 'GBP' ||
     normalized === 'JPY'
@@ -53,6 +54,7 @@ export default function TokenLogo({ ticker }: { ticker: TokenLogoTicker }) {
   if (ticker === 'CHF') return <SwitzerlandFlagLogo />
   if (ticker === 'BRL') return <BrazilFlagLogo />
   if (ticker === 'CNY') return <ChinaFlagLogo />
+  if (ticker === 'CUP') return <CubaFlagLogo />
   if (ticker === 'EUR') return <EuropeanUnionFlagLogo />
   if (ticker === 'GBP') return <UnitedKingdomFlagLogo />
   if (ticker === 'JPY') return <JapanFlagLogo />
@@ -193,6 +195,32 @@ export function ChinaFlagLogo() {
         <path d='m17.1 8.2-.18 1.14 1.04.51-1.14.18-.18 1.14-.52-1.04-1.14.18.81-.82-.51-1.04 1.04.51z' />
         <path d='m17 12.15-.7.91 1.08.4-1.14.16-.05 1.15-.69-.92-1.1.32.66-.94-.65-.95 1.1.33.7-.92.04 1.15z' />
         <path d='m14.25 15.35.18 1.14 1.04-.51-.8.82.8.81-1.04-.5-.18 1.14-.18-1.14-1.04.5.8-.81-.8-.82 1.04.51z' />
+      </g>
+    </svg>
+  )
+}
+
+export function CubaFlagLogo() {
+  return (
+    <svg aria-hidden='true' viewBox='0 0 32 32' focusable='false'>
+      <defs>
+        <clipPath id='cu-flag-circle'>
+          <circle cx='16' cy='16' r='16' />
+        </clipPath>
+      </defs>
+      <g clipPath='url(#cu-flag-circle)'>
+        <g>
+          <rect x='0' y='0' width='32' height='6.4' fill='#0050A7' />
+          <rect x='0' y='6.4' width='32' height='6.4' fill='#FFF' />
+          <rect x='0' y='12.8' width='32' height='6.4' fill='#0050A7' />
+          <rect x='0' y='19.2' width='32' height='6.4' fill='#FFF' />
+          <rect x='0' y='25.6' width='32' height='6.4' fill='#0050A7' />
+        </g>
+        <polygon points='0,0 0,32 24,16' fill='#D22228' />
+        <path
+          fill='#FFF'
+          d='M7.5 10.8L8.734 14.301 12.446 14.393 9.497 16.649 10.557 20.207 7.5 18.1 4.443 20.207 5.503 16.649 2.554 14.393 6.266 14.301z'
+        />
       </g>
     </svg>
   )
