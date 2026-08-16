@@ -1,20 +1,63 @@
-# 👾 Arkade Wallet
+# 🛶 CanoArk
 
-Arkade Wallet is the entry-point to the Arkade ecosystem—a self-custodial Bitcoin wallet delivered as a lightweight Progressive Web App (installable on mobile or desktop in seconds, no app-store gatekeepers). Built around the open-source ARK protocol, it speaks natively to any [arkd](https://github.com/arkade-os/arkd) instance, letting you create, send, and receive Virtual Transaction Outputs (VTXOs) for instant, off-chain pre-confirmations and batched, fee-efficient on-chain settlement.
+**CanoArk** es una billetera Bitcoin autocustodial construida como un **fork de [Arkade Wallet](https://github.com/arkade-os/wallet)** (MIT, © Ark Labs), con una capa nativa Android (APK) y localización completa ES/EN.
 
-## Screenshots
+Navega el mundo de Ark desde el Caribe: la canoa para tus **VTXOs** — transacciones instantáneas off-chain con asentamiento por lotes en Bitcoin mainnet, sin entregar tus claves.
 
-<!-- Using a table for more consistent layout -->
-<table>
-  <tr>
-    <td width="50%" align="center">
-      <img src="./mockup/new-wallet.png" alt="New Wallet" width="250">
-    </td>
-    <td width="50%" align="center">
-      <img src="./mockup/home-arkade-wallet.png" alt="Home Screen" width="250">
-    </td>
-  </tr>
-</table>
+## Características propias de este fork
+
+- **APK Android nativa** (Capacitor) con nombre, icono y splash **CanoArk**, construida de forma reproducible por GitHub Actions (`build-apk.yml`).
+- **Localización completa EN/ES** de todas las pantallas, componentes y estados.
+- **Emisión de activos y estables** (Arkade Assets): soporte para reservas en CUP y tokens respaldados, con `control asset` y reemisión/quema.
+- **Notas (ArkNote)**: instrumentos al portador para pagos offline.
+- **Sin analítica de terceros por defecto**: Plausible de Ark Labs retirado; Chatwoot y Sentry desactivados salvo configuración explícita.
+
+## Arquitectura
+
+- **Stack**: React + TypeScript + Vite, con el [SDK de Arkade](https://github.com/arkade-os) para hablar con cualquier instancia [arkd](https://github.com/arkade-os/arkd).
+- **Off-chain**: VTXOs con pre-confirmación instantánea y asentamiento en batch (batch swaps).
+- **On-chain**: salidas colaborativas/unilaterales y Bitcoin mainnet.
+- **APK**: envoltura Capacitor que sirve el mismo `dist/` dentro de un WebView de Android (scanner ML Kit, notificaciones, haptics).
+
+## Branding y APK
+
+### Icono y splash
+
+- `assets/icon.png` (1024×1024) y `assets/splash.png` (2732×2732) son las imágenes fuente aprobadas.
+- `assets/android/` contiene las variantes por densidad (iconos `mipmap-*` y splashes port/land) que se commitean.
+- `scripts/prepare-branding.mjs` las inyecta en el proyecto Android que genera `npx cap add android` (idempotente) y desactiva los iconos adaptativos para que el launcher respete el diseño aprobado.
+
+### Identidad de la app
+
+| Campo | Valor |
+|---|---|
+| `appId` (`capacitor.config.ts`) | `com.canoark.wallet` |
+| `appName` (`capacitor.config.ts`) | `CanoArk` |
+| Nombre PWA (`public/manifest.json`, `index.html`) | `CanoArk` |
+
+> ⚠️ Cambia `appId` **antes** de distribuir: una vez instalado, modificar el `appId` crea una aplicación distinta.
+
+### Construir el APK
+
+El workflow `build-apk.yml` hace el build completo en CI. En local:
+
+```bash
+pnpm build
+npx cap add android
+npx cap sync android
+node scripts/prepare-branding.mjs
+node scripts/prepare-android.mjs
+node scripts/prepare-service-worker.mjs
+cd android && ./gradlew assembleDebug
+```
+
+### Operador por defecto
+
+La app habla con el operador público `https://arkade.computer` (el mismo que usa Arkade). Para apuntar a tu propio operador, cambia `VITE_ARK_SERVER` en el build (o en el workflow):
+
+```bash
+VITE_ARK_SERVER=https://tu-operador.example pnpm build
+```
 
 ## Environment Variables
 
@@ -29,7 +72,7 @@ Arkade Wallet is the entry-point to the Arkade ecosystem—a self-custodial Bitc
 | `VITE_SATORA_IFRAME_URL`      | Override the default Satora URL                                     | `VITE_SATORA_IFRAME_URL=http://localhost:5174`                                       |
 | `VITE_MAX_PERCENTAGE`         | Override the max fee percentage (default 10)                        | `VITE_MAX_PERCENTAGE=5`                                                              |
 | `VITE_NOSTR_RELAY_URL`        | Override the default Nostr relay URLs for backup                    | `VITE_NOSTR_RELAY_URL=wss://relay.example.com`                                       |
-| `VITE_PSA_MESSAGE`            | Message to show on the wallet index page                            | `VITE_PSA_MESSAGE=@arkade_os on TG for support`                                      |
+| `VITE_PSA_MESSAGE`            | Message to show on the wallet index page                            | `VITE_PSA_MESSAGE=@canoark on TG for support`                                        |
 | `VITE_SENTRY_DSN`             | Enable Sentry error tracking (only in production, not on localhost) | `VITE_SENTRY_DSN=your-sentry-dsn`                                                    |
 | `VITE_UTXO_MAX_AMOUNT`        | Override the server's utxoMaxAmount                                 | `VITE_UTXO_MAX_AMOUNT=-1`                                                            |
 | `VITE_UTXO_MIN_AMOUNT`        | Override the server's utxoMinAmount                                 | `VITE_UTXO_MIN_AMOUNT=330`                                                           |
@@ -39,66 +82,22 @@ Arkade Wallet is the entry-point to the Arkade ecosystem—a self-custodial Bitc
 | `CI`                          | Set to `true` for Continuous Integration environments               | `CI=true`                                                                            |
 | `GENERATE_SOURCEMAP`          | Disable source map generation during build                          | `GENERATE_SOURCEMAP=false`                                                           |
 
-## Docker
-
-The wallet is available as a Docker image on GitHub Container Registry.
-
-### Pull and run
-
-```bash
-docker pull ghcr.io/arkade-os/wallet:latest
-docker run -p 8080:80 ghcr.io/arkade-os/wallet:latest
-```
-
-Open [http://localhost:8080](http://localhost:8080) to view the wallet.
-
-### Runtime configuration
-
-Environment variables can be passed at runtime to configure the wallet without rebuilding the image:
-
-```bash
-docker run -p 8080:80 \
-  -e VITE_ARK_SERVER=https://arkade.computer \
-  ghcr.io/arkade-os/wallet:latest
-```
-
-See the [Environment Variables](#environment-variables) table for all supported variables.
-
-### Build locally
-
-```bash
-docker build -t arkade-wallet .
-
-# With build-time configuration
-docker build \
-  --build-arg VITE_ARK_SERVER=https://arkade.computer \
-  -t arkade-wallet .
-```
-
 ## Content Security Policy
 
-The policy is served by nginx (`nginx-security-headers.conf`) for Docker and by `public/_headers` for Cloudflare
-Pages. Both are static, so:
+La política se sirve por nginx (`nginx-security-headers.conf`) para Docker y por `public/_headers` para Cloudflare Pages. Ambas son estáticas:
 
-- Setting `VITE_CHATWOOT_BASE_URL` to a host other than `https://app.chatwoot.com` requires adding that origin to
-  `script-src` in the file your deployment uses.
-- The inline theme bootstrap in `index.html` is allowed by hash. `pnpm csp:check` (run on pre-commit and before
-  `pnpm build`) verifies it; `pnpm csp:fix` updates it after editing that block.
-- `public/_headers` allows `https://static.cloudflareinsights.com` because Cloudflare Web Analytics injects its
-  beacon into HTML responses at the edge, so the script is not in the build. Beware of Cloudflare features that
-  inject _inline_ script — Rocket Loader, Email Obfuscation — which the hash-only `script-src` blocks and
-  `pnpm csp:check` cannot catch, since it only sees the built `index.html`.
+- Si apuntas `VITE_CHATWOOT_BASE_URL` a un host distinto de `https://app.chatwoot.com`, añade ese origen a `script-src` en el archivo de tu despliegue.
+- El bootstrap de tema inline en `index.html` está permitido por hash. `pnpm csp:check` (pre-commit y antes de `pnpm build`) lo verifica; `pnpm csp:fix` lo actualiza tras editar ese bloque.
+- `public/_headers` permite `https://static.cloudflareinsights.com` porque Cloudflare Web Analytics inyecta su beacon en el HTML en el edge. Ojo con features de Cloudflare que inyectan script *inline* (Rocket Loader, Email Obfuscation), que el `script-src` por hash bloquea y `pnpm csp:check` no puede detectar.
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js v24.15.0 (see `.nvmrc`)
+- Node.js v24.15.0 (ver `.nvmrc`)
 - PNPM >=8
 
 ### Installation
-
-Install dependencies
 
 ```bash
 pnpm install
@@ -108,78 +107,46 @@ pnpm install
 
 ### `pnpm run start`
 
-Runs the app in the development mode.\
-Open [http://localhost:3002](http://localhost:3002) to view it in the browser.
-
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+Arranca la app en modo desarrollo en [http://localhost:3002](http://localhost:3002).
 
 ### `pnpm run build`
 
-Builds the app for production to the `dist` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Construye la app de producción en `dist/`.
 
 ### `pnpm run regtest:start`
 
-Starts the regtest environment and sets up the arkd instance.\
-Requires Docker and Node.js v20.19+ or v22.12+. The stack is driven by the in-house
-`arkade-regtest` Node CLI (`regtest/regtest.mjs`) — no Nigiri required.
+Levanta el entorno regtest y configura la instancia arkd (requiere Docker). Parada: `pnpm run regtest:stop`; limpieza: `pnpm run regtest:clean`.
 
-Use `pnpm run regtest:stop` to stop it and `pnpm run regtest:clean` to tear it down.
+### Financiar tu wallet local
 
-### Funding your local wallet
-
-To interact with Ark features, you need Regtest coins.
-
-1. Copy your address from the wallet's **Receive** screen (ensure it starts with bcrt1 for Regtest).
-2. Run the faucet command (the `--confirm` flag mines a block so the deposit confirms):
-
+1. Copia tu dirección desde la pantalla **Receive** (debe empezar con `bcrt1`).
+2. Ejecuta el faucet (minera un bloque para confirmar el depósito):
 ```bash
 node regtest/regtest.mjs faucet <bcrt-address> <btc> --confirm
 ```
 
-### e2e tests
+## Testing
 
-> note: e2e tests require a regtest environment to be running.
-> `pnpm run regtest:start` to start and setup the regtest environment.
+### Unit e integración (Vitest)
 
-> note: e2e tests use playwright for ui testing, you may need to run
-> `pnpm exec playwright install` once to download new browsers.
+```bash
+pnpm test
+```
 
-Run the tests with:
+### E2E (Playwright)
+
+Requiere el entorno regtest corriendo (`pnpm run regtest:start`) y `pnpm exec playwright install` la primera vez:
 
 ```bash
 pnpm run test:e2e
 ```
 
-Run the tests in interactive mode with:
-
-```bash
-pnpm run test:e2e --ui
-```
-
-Access the playwright code generator tool with:
-
-```bash
-pnpm run test:codegen
-```
-
-On CI the suite runs as four parallel jobs: two browser projects (`Mobile Chrome`,
-`Google Chrome`) times two file groups defined in `.github/workflows/playwright.yml`:
-
+En CI la suite corre como cuatro jobs paralelos (dos proyectos de browser × dos grupos definidos en `.github/workflows/playwright.yml`):
 - `assets-send`: `asset.test.ts`, `send.test.ts`
-- `core`: every other file in `src/test/e2e/`
+- `core`: el resto de `src/test/e2e/`
 
-The groups list files explicitly, so **a new test file must be added to one of them**,
-otherwise it will never run on CI.
+> Un archivo de test nuevo **debe añadirse a uno de los grupos**, o nunca correrá en CI.
 
-## Troubleshooting
+## Licencia
 
-### `address already in use` (Port 5000) on macOS
-
-macOS AirPlay Receiver uses port 5000 by default, which conflicts with the regtest stack.
-
-- **Fix:** Go to `System Settings > General > AirDrop & Handoff` and disable **AirPlay Receiver**.
+MIT. **Fork de [Arkade Wallet](https://github.com/arkade-os/wallet) © Ark Labs 2025.** Código original: [https://github.com/arkade-os/wallet](https://github.com/arkade-os/wallet). Este proyecto no es un producto oficial de Ark Labs.

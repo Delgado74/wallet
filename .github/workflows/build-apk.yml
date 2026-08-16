@@ -45,6 +45,9 @@ jobs:
       - name: Initialize Capacitor
         run: npx cap add android
 
+      - name: Apply CanoArk branding (icons + splash)
+        run: node scripts/prepare-branding.mjs
+
       - name: Sync Capacitor
         run: npx cap sync android
 

@@ -1,8 +1,8 @@
-import type { CapacitorConfig } from '@capacitor/cli';
+import type { CapacitorConfig } from '@capacitor/cli'
 
 const config: CapacitorConfig = {
-  appId: 'com.delgado74.arkade',
-  appName: 'Arkade Wallet',
+  appId: 'com.canoark.wallet',
+  appName: 'CanoArk',
   webDir: 'dist',
   server: {
     androidScheme: 'https',
@@ -12,6 +12,6 @@ const config: CapacitorConfig = {
       androidPermissions: ['android.permission.CAMERA'],
     },
   },
-};
+}
 
-export default config;
+export default config
