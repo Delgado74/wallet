@@ -8,8 +8,6 @@ Navega el mundo de Ark desde el Caribe: la canoa para tus **VTXOs** — transacc
 
 - **APK Android nativa** (Capacitor) con nombre, icono y splash **CanoArk**, construida de forma reproducible por GitHub Actions (`build-apk.yml`).
 - **Localización completa EN/ES** de todas las pantallas, componentes y estados.
-- **Emisión de activos y estables** (Arkade Assets): soporte para reservas en CUP y tokens respaldados, con `control asset` y reemisión/quema.
-- **Notas (ArkNote)**: instrumentos al portador para pagos offline.
 - **Sin analítica de terceros por defecto**: Plausible de Ark Labs retirado; Chatwoot y Sentry desactivados salvo configuración explícita.
 
 ## Arquitectura
@@ -34,8 +32,6 @@ Navega el mundo de Ark desde el Caribe: la canoa para tus **VTXOs** — transacc
 | `appId` (`capacitor.config.ts`) | `com.canoark.wallet` |
 | `appName` (`capacitor.config.ts`) | `CanoArk` |
 | Nombre PWA (`public/manifest.json`, `index.html`) | `CanoArk` |
-
-> ⚠️ Cambia `appId` **antes** de distribuir: una vez instalado, modificar el `appId` crea una aplicación distinta.
 
 ### Construir el APK
 
