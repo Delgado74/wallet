@@ -21,7 +21,6 @@ import { onboardStaggerContainer, EASE_OUT_QUINT_TUPLE } from '../../lib/animati
 import { useReducedMotion } from '../../hooks/useReducedMotion'
 import OnboardingLogo from '../../components/OnboardingLogo'
 import PixelSunrise from '../../components/PixelSunrise'
-import SmallLogo from '../../components/SmallLogo'
 import BoltOutlineIcon from '../../icons/BoltOutline'
 import GlobeOutlineIcon from '../../icons/GlobeOutline'
 import ShieldCheckOutlineIcon from '../../icons/ShieldCheckOutline'
@@ -153,9 +152,7 @@ export default function Init() {
                     justifyContent: 'center',
                     flexShrink: 0,
                   }}
-                >
-                  {contentReady ? <SmallLogo /> : null}
-                </div>
+                />
                 <motion.div
                   initial={prefersReduced ? false : { opacity: 0, y: 6 }}
                   animate={
@@ -173,7 +170,7 @@ export default function Init() {
                     data-testid='onboarding-devmode-tap'
                     style={{ ...titleStyle, paddingLeft: 4, cursor: 'default' }}
                   >
-                    Welcome to Arkade 👾
+                    {t('init.welcome')}
                   </h1>
                 </motion.div>
               </div>
