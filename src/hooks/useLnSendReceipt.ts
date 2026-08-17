@@ -87,7 +87,17 @@ export function useLnSendReceipt(tx: Tx | undefined): LnSendReceipt | undefined 
     })
       .then((spender) => {
         if (!spender) return
-        saveTransactionActivityMetadata(fundedTxid, { lnSend: { swapPkScript: unresolvedPkScript, spend: spender } })
+        // Preserve invoiceAmount if the record already carries it (the spend
+        // lookup replaces the whole lnSend shape, so dropping it would lose
+        // the data needed to reconstruct the fee after a restore).
+        const existing = readTransactionActivityMetadata([fundedTxid])?.lnSend
+        saveTransactionActivityMetadata(fundedTxid, {
+          lnSend: {
+            swapPkScript: unresolvedPkScript,
+            invoiceAmount: existing?.invoiceAmount,
+            spend: spender,
+          },
+        })
         setResolved(spender)
       })
       .catch(consoleError)

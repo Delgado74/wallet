@@ -4,8 +4,7 @@ import ButtonsOnBottom from '../../components/ButtonsOnBottom'
 import Padded from '../../components/Padded'
 import { WalletContext } from '../../providers/wallet'
 import { FlowContext } from '../../providers/flow'
-import { isBurn, isIssuance, prettyDate } from '../../lib/format'
-import { defaultFee } from '../../lib/constants'
+import { isBurn, isIssuance, prettyDate, prettyHide } from '../../lib/format'
 import ErrorMessage from '../../components/Error'
 import { extractError } from '../../lib/error'
 import Header from '../../components/Header'
@@ -29,6 +28,7 @@ import {
   swapFeeAmount,
   swapPriceRateLabel,
   swapStatusLabel,
+  type SwapDisplayAmount,
   type SwapStatus,
 } from '../../lib/swapDisplay'
 import { AssetSwapsContext } from '../../providers/assetSwaps'
@@ -177,7 +177,18 @@ export default function Transaction() {
           ? t('transaction.settled')
           : t('transaction.preconfirmed')
 
-  const fees = tx.networkFee ?? (tx.type === 'sent' ? defaultFee : 0)
+  // Lightning sends: the fee is the solver's spread (fundAmount − invoiceAmount),
+  // shown as "Swap fees" because it is the solver's cut, not a network fee.
+  // Onchain sends: the fee is the network fee, shown as "Network fees".
+  // Received transactions always have 0 network fee.
+  // When the metadata record is absent for a sent tx (after settlement key
+  // change or restore), networkFee is undefined — no fee row is shown rather
+  // than claiming "0".
+  const isLnSend = Boolean(tx.lnSend)
+  const lnFee = isLnSend && tx.lnSend?.invoiceAmount && tx.amount ? tx.amount - tx.lnSend.invoiceAmount : undefined
+  const lnSwapFees: SwapDisplayAmount | undefined =
+    lnFee !== undefined && lnFee > 0 ? { masked: prettyHide('hidden', 'BTC'), value: `${lnFee} sats` } : undefined
+  const fees = tx.type === 'received' ? 0 : isLnSend ? undefined : tx.networkFee
   // On asset transfers tx.amount is only the data carrier, not the asset value.
   // The asset-aware rows below replace the legacy Amount/Total rows.
   const assetTransfer = Boolean(tx.assets?.length)
@@ -262,6 +273,7 @@ export default function Transaction() {
         destination: tx.type === 'sent' && !boardingTx && !issuanceTx && !burnTx ? tx.destination : undefined,
         fees,
         isOffchainTx: !tx.boardingTxid && (Boolean(tx.redeemTxid) || Boolean(tx.roundTxid)),
+        swapFees: lnSwapFees,
         // Details' fallback row only (amountDisplay owns the rendered rows):
         // gross, matching the hook's convention
         satoshis: assetTransfer ? undefined : tx.amount,
