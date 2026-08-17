@@ -704,6 +704,9 @@ export const translations = {
       swept: 'swept',
       unconfirmed: 'unconfirmed',
       expiringSoon: 'expiring soon',
+      consolidate: 'Consolidate',
+      consolidating: 'Consolidating',
+      coinsConsolidated: 'Coins consolidated successfully',
     },
     logs: {
       pressEnter: 'Pressing Enter enables keyboard navigation of the logs',
@@ -1457,6 +1460,9 @@ export const translations = {
       swept: 'barrido',
       unconfirmed: 'sin confirmar',
       expiringSoon: 'expira pronto',
+      consolidate: 'Consolidar',
+      consolidating: 'Consolidando',
+      coinsConsolidated: 'Monedas consolidadas correctamente',
     },
     logs: {
       pressEnter: 'Al presionar Enter se activa la navegación por teclado de los registros',
