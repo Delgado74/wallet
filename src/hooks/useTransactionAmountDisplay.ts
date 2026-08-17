@@ -28,12 +28,16 @@ export function useAmountDisplayContext() {
 export function useTransactionAmountDisplay(tx: Tx | undefined): TransactionAmountDisplay | undefined {
   const context = useAmountDisplayContext()
   if (!tx || tx.type === 'swap') return undefined
+  // Lightning sends: show the net invoice amount (what the recipient got),
+  // not the gross fund amount (which includes the solver fee).
+  const satoshis = tx.assets?.length
+    ? 0
+    : tx.type === 'sent' && tx.lnSend?.invoiceAmount
+      ? tx.lnSend.invoiceAmount
+      : Math.max(tx.type === 'sent' ? tx.amount - defaultFee : tx.amount, 0)
   return buildTransactionAmountDisplay({
     ...context,
     assets: tx.assets,
-    // On asset transfers tx.amount is only the data carrier, not the asset value.
-    // Sent amounts stay GROSS (fee included) — the headline is the full debit,
-    // with the fee broken out on its own receipt row; the e2e suite pins this.
-    satoshis: tx.assets?.length ? 0 : Math.max(tx.type === 'sent' ? tx.amount - defaultFee : tx.amount, 0),
+    satoshis,
   })
 }
