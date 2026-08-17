@@ -358,6 +358,45 @@ export const settleVtxos = async (
   }
 }
 
+/** Consolidate ALL spendable VTXOs into a single output, not just expiring
+ *  ones. Useful for merging micropayment dust into a single spendable VTXO. */
+export const consolidateAllSpendableVtxos = async (wallet: IWallet, dustAmount: bigint): Promise<void> => {
+  const vtxos = await wallet.getVtxos({ withRecoverable: false })
+  const spendable = vtxos.filter((v) => !v.isSpent && !v.isSwept)
+
+  if (spendable.length === 0) throw new Error('No spendable VTXOs to consolidate')
+
+  const amount = spendable.reduce((sum, v) => sum + v.value, 0)
+
+  if (amount < Number(dustAmount)) throw new Error('Total amount is below dust threshold')
+
+  const outputs = [
+    {
+      address: await wallet.getAddress(),
+      amount: BigInt(amount),
+    },
+  ]
+
+  try {
+    await wallet.settle({ inputs: spendable, outputs }, console.log)
+  } catch (error) {
+    await captureSettleError(error, wallet, 'consolidateAllSpendableVtxos', {
+      dustAmount: Number(dustAmount),
+      ...summarizeInputs(spendable),
+    })
+    throw error
+  }
+}
+
+export const renewCoins = async (
+  wallet: IWallet,
+  vtxoManager: IVtxoManager,
+  dustAmount: bigint,
+  thresholdMs?: number,
+): Promise<void> => {
+  const { inputs } = await getInputsToSettle(wallet, vtxoManager, thresholdMs)
+  if (inputs.length > 0) await settleVtxos(wallet, vtxoManager, dustAmount, thresholdMs)
+}
 export const delegateVtxos = async (wallet: ServiceWorkerWallet): Promise<void> => {
   const cm = await wallet.getContractManager()
   const contractWithVtxos = await cm.getContractsWithVtxos({ type: 'delegate' })

@@ -17,7 +17,7 @@ import Info from '../../components/Info'
 import LoadingIcon from '../../icons/Loading'
 import { AspContext } from '../../providers/asp'
 import Reminder from '../../components/Reminder'
-import { aspErrorText, getInputsToSettle, settleVtxos } from '../../lib/asp'
+import { aspErrorText, consolidateAllSpendableVtxos, getInputsToSettle, settleVtxos } from '../../lib/asp'
 import LoadingLogo from '../../components/LoadingLogo'
 import { LimitsContext } from '../../providers/limits'
 import { EmptyCoinsList } from '../../components/Empty'
@@ -63,6 +63,8 @@ export default function Vtxos() {
   const [success, setSuccess] = useState(false)
   const [hasVtxosToSettle, setHasVtxosToSettle] = useState(false)
   const [hasBoardingUtxosToSettle, setHasBoardingUtxosToSettle] = useState(false)
+  const [consolidating, setConsolidating] = useState(false)
+  const [spendableCount, setSpendableCount] = useState(0)
 
   // Update error state if aspInfo.unreachable changes
   useEffect(() => {
@@ -110,8 +112,10 @@ export default function Vtxos() {
           svcWallet.getBoardingUtxos(),
         ])
         const ordered = [...vtxosData].sort((a, b) => a.value - b.value)
+        const spendable = ordered.filter((v) => !v.isSpent && !v.isSwept)
         setAllVtxos(ordered)
         setAllUtxos(utxosData)
+        setSpendableCount(spendable.length)
         setLoading(false)
       } catch (err) {
         consoleError(err)
@@ -171,6 +175,22 @@ export default function Vtxos() {
       })
       setError(extractError(err))
       setRollingover(false)
+    }
+  }
+
+  const handleConsolidate = async () => {
+    try {
+      setConsolidating(true)
+      await consolidateAllSpendableVtxos(svcWallet, aspInfo.dust)
+      await reloadWallet()
+      setConsolidating(false)
+      setSuccess(true)
+    } catch (err) {
+      Sentry.captureException(err, {
+        tags: { function: 'vtxos:handleConsolidate' },
+      })
+      setError(extractError(err))
+      setConsolidating(false)
     }
   }
 
@@ -415,6 +435,13 @@ export default function Vtxos() {
           <ButtonsOnBottom>
             {hasInputsToSettle && !hideUtxos ? (
               <Button onClick={handleRollover} label={label} disabled={rollingover || !aboveDust} />
+            ) : null}
+            {showList && spendableCount > 1 ? (
+              <Button
+                onClick={handleConsolidate}
+                label={consolidating ? t('vtxos.consolidating') : t('vtxos.consolidate')}
+                disabled={consolidating}
+              />
             ) : null}
             {wallet.nextRollover ? (
               <Button onClick={() => setReminderIsOpen(true)} label={t('transaction.addReminder')} secondary />
