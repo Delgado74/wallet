@@ -554,6 +554,9 @@ export const translations = {
       swept: 'swept',
       unconfirmed: 'unconfirmed',
       expiringSoon: 'expiring soon',
+      consolidate: 'Consolidate',
+      consolidating: 'Consolidating',
+      coinsConsolidated: 'Coins consolidated successfully',
     },
     apps: {
       satora: 'Satora',
@@ -1116,6 +1119,9 @@ export const translations = {
       swept: 'barrido',
       unconfirmed: 'sin confirmar',
       expiringSoon: 'expira pronto',
+      consolidate: 'Consolidar',
+      consolidating: 'Consolidando',
+      coinsConsolidated: 'Monedas consolidadas correctamente',
     },
     apps: {
       satora: 'Satora',
