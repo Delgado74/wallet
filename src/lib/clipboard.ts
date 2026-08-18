@@ -30,8 +30,12 @@ export const pasteFromClipboard = async (): Promise<string> => {
 }
 
 export const queryPastePermission = async (): Promise<PermissionState> => {
+  // On native platforms the Capacitor Clipboard plugin reads from the OS
+  // clipboard directly (Android ClipboardManager) and does not go through
+  // the web Permissions API. navigator.permissions can return 'denied' in a
+  // Capacitor WebView, which would silently block the paste.
+  if (isNativePlatform()) return 'prompt'
   try {
-    // Chrome and Edge will handle this perfectly
     return (await navigator.permissions.query({ name: 'clipboard-read' as PermissionName })).state
   } catch (err) {
     // Safari and Firefox land here because 'clipboard-read' is unsupported in query()
