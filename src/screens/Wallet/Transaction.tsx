@@ -273,6 +273,7 @@ export default function Transaction() {
         destination: tx.type === 'sent' && !boardingTx && !issuanceTx && !burnTx ? tx.destination : undefined,
         fees,
         isOffchainTx: !tx.boardingTxid && (Boolean(tx.redeemTxid) || Boolean(tx.roundTxid)),
+        lnSend: isLnSend,
         swapFees: lnSwapFees,
         // Details' fallback row only (amountDisplay owns the rendered rows):
         // gross, matching the hook's convention
