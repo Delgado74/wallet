@@ -14,6 +14,7 @@ import {
   DelegateInfo,
   toXOnlySignerHex,
   hasTerminalSpend,
+  isVtxoExpiringSoon,
 } from '@arkade-os/sdk'
 import { Addresses, Tx, Vtxo } from './types'
 import { AspInfo } from '../providers/asp'
@@ -358,15 +359,44 @@ export const settleVtxos = async (
   }
 }
 
-/** Consolidate ALL spendable VTXOs into a single output, not just expiring
- *  ones. Useful for merging micropayment dust into a single spendable VTXO. */
-export const consolidateAllSpendableVtxos = async (wallet: IWallet, dustAmount: bigint): Promise<void> => {
+/** Minimum time before expiry that the ASP will accept a VTXO as settle input.
+ *  Derived from the "minExpiryGap" server constraint (~29 days). */
+const MIN_SETTLE_GAP_MS = 29 * 24 * 60 * 60 * 1000
+
+export interface ConsolidationResult {
+  consolidated: number
+  pending: number
+  nextAvailableAt?: Date
+}
+
+/** Consolidate spendable VTXOs that are within the settlement window.
+ *  VTXOs with more than ~29 days until expiry cannot be settled yet. */
+export const consolidateAllSpendableVtxos = async (
+  wallet: IWallet,
+  dustAmount: bigint,
+): Promise<ConsolidationResult> => {
   const vtxos = await wallet.getVtxos({ withRecoverable: false })
   const spendable = vtxos.filter((v) => !v.isSpent && !v.isSwept)
 
   if (spendable.length === 0) throw new Error('No spendable VTXOs to consolidate')
 
-  const amount = spendable.reduce((sum, v) => sum + v.value, 0)
+  const eligible = spendable.filter((v) => isVtxoExpiringSoon(v, MIN_SETTLE_GAP_MS))
+  const pending = spendable.length - eligible.length
+
+  if (eligible.length === 0) {
+    const now = Date.now()
+    const nextEligible = spendable
+      .filter((v) => v.expiresAt)
+      .map((v) => new Date(v.expiresAt!.getTime() - MIN_SETTLE_GAP_MS))
+      .filter((d) => d.getTime() > now)
+      .sort((a, b) => a.getTime() - b.getTime())[0]
+    throw Object.assign(new Error('No VTXOs eligible for consolidation'), {
+      nextAvailableAt: nextEligible,
+      pending,
+    })
+  }
+
+  const amount = eligible.reduce((sum, v) => sum + v.value, 0)
 
   if (amount < Number(dustAmount)) throw new Error('Total amount is below dust threshold')
 
@@ -378,11 +408,12 @@ export const consolidateAllSpendableVtxos = async (wallet: IWallet, dustAmount: 
   ]
 
   try {
-    await wallet.settle({ inputs: spendable, outputs }, console.log)
+    await wallet.settle({ inputs: eligible, outputs }, console.log)
+    return { consolidated: eligible.length, pending }
   } catch (error) {
     await captureSettleError(error, wallet, 'consolidateAllSpendableVtxos', {
       dustAmount: Number(dustAmount),
-      ...summarizeInputs(spendable),
+      ...summarizeInputs(eligible),
     })
     throw error
   }
