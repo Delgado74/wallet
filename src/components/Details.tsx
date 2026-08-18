@@ -41,6 +41,7 @@ export interface DetailsProps {
   fees?: number
   fundedTxid?: string
   invoice?: string
+  lnSend?: boolean
   isOffchainTx?: boolean
   priceRate?: string
   satoshis?: number
@@ -79,6 +80,7 @@ export default function Details({ details, variant }: { details?: DetailsProps; 
     fundedTxid,
     invoice,
     isOffchainTx,
+    lnSend,
     priceRate,
     satoshis,
     spendLabel,
@@ -118,10 +120,14 @@ export default function Details({ details, variant }: { details?: DetailsProps; 
               amountDisplay.raw.length === 1
                 ? amount.unverified
                   ? t('accounts.unverifiedAssetAmount')
-                  : t('accounts.assetAmount')
+                  : lnSend
+                    ? t('accounts.assetAmountWithSwapFee')
+                    : t('accounts.assetAmount')
                 : amount.unverified
                   ? t('accounts.assetAmountTickerUnverified', { ticker: amount.ticker })
-                  : t('accounts.assetAmountTicker', { ticker: amount.ticker }),
+                  : lnSend
+                    ? t('accounts.assetAmountWithSwapFee')
+                    : t('accounts.assetAmountTicker', { ticker: amount.ticker }),
               formatSensitiveDetail(amount),
               <AmountIcon key={`asset-amount-icon-${amount.assetId ?? amount.ticker}`} />,
             ] satisfies TableData[number],
