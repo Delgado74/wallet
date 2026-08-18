@@ -28,13 +28,9 @@ export function useAmountDisplayContext() {
 export function useTransactionAmountDisplay(tx: Tx | undefined): TransactionAmountDisplay | undefined {
   const context = useAmountDisplayContext()
   if (!tx || tx.type === 'swap') return undefined
-  // Lightning sends: show the net invoice amount (what the recipient got),
-  // not the gross fund amount (which includes the solver fee).
-  const satoshis = tx.assets?.length
-    ? 0
-    : tx.type === 'sent' && tx.lnSend?.invoiceAmount
-      ? tx.lnSend.invoiceAmount
-      : Math.max(tx.type === 'sent' ? tx.amount - defaultFee : tx.amount, 0)
+  // Lightning sends: the amount includes the solver fee (fundAmount), shown
+  // with a combined "amount + swap fee" label so the user sees the total.
+  const satoshis = tx.assets?.length ? 0 : tx.type === 'sent' ? Math.max(tx.amount - defaultFee, 0) : tx.amount
   return buildTransactionAmountDisplay({
     ...context,
     assets: tx.assets,
