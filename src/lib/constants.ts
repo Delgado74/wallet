@@ -36,6 +36,9 @@ export const defaultArkServer = () => {
   return mainServer
 }
 
+export const isMainnet = (network: NetworkName | string): boolean =>
+  !!network && network !== 'testnet' && network !== 'mutinynet' && network !== 'signet' && network !== 'regtest'
+
 const DELEGATE_URL: Record<NetworkName, string | null> = {
   bitcoin: 'https://delegate.arkade.money',
   mutinynet: `https://delegator.mutinynet.arkade.sh`,
@@ -88,7 +91,7 @@ const EMULATOR_PUBKEY: Record<NetworkName, string | null> = {
   // per-deployment: a local stack generates its own co-signer key, so there is
   // no constant to pin. Set VITE_EMULATOR_PUBKEY to your emulator's signer
   // key.
-  regtest: null,
+  regtest: '02999413c46fa10ada5cbc4bcc79a1d09160c2ba3cfc812705d7a13e5e545fb2a9',
   testnet: null,
 }
 
@@ -115,6 +118,33 @@ export const getEmulatorPubkeyForNetwork = (network: NetworkName): Uint8Array | 
   } catch {
     return undefined
   }
+}
+
+/** 66 lowercase hex chars with an 02/03 prefix — a compressed secp256k1 point,
+ * the only shape `@arkade-os/swap`'s `resolveEmulatorPubkey` accepts. */
+const COMPRESSED_PUBKEY_HEX = /^0[23][0-9a-f]{64}$/
+
+/**
+ * The compressed (33-byte) hex `@arkade-os/swap` takes as its `emulatorPubkey`
+ * override, or undefined when the configured key is absent, x-only, or
+ * malformed — in which case the package falls back to its own per-network pin.
+ *
+ * Same env/table source as {@link getEmulatorPubkeyForNetwork}, different shape
+ * gate: that one feeds the covenant derivation, which wants the x-only form and
+ * narrows a compressed value to reach it. This one cannot narrow in the other
+ * direction — re-adding the 02/03 prefix to an x-only key is a coin flip between
+ * two distinct points — so an x-only value reads as NO override rather than as a
+ * guess.
+ *
+ * The trap that leaves: a deployment whose `VITE_EMULATOR_PUBKEY` is x-only
+ * keeps the QR corridor's rendezvous working (it compares against the card's own
+ * x-only key) while the RFQ override goes absent, so the covenant derives from
+ * the package's placeholder and `verifyLockupAddress` refuses at quote time. A
+ * deployment that wants regtest RFQ must configure the compressed form.
+ */
+export const getEmulatorPubkeyOverrideForNetwork = (network: NetworkName): string | undefined => {
+  const configured = getEmulatorPubkeyHexForNetwork(network)
+  return configured && COMPRESSED_PUBKEY_HEX.test(configured) ? configured : undefined
 }
 
 // covclaimd — the service that could claim a Lightning-receive lockup for an
