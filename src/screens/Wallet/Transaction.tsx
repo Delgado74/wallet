@@ -5,6 +5,7 @@ import Padded from '../../components/Padded'
 import { WalletContext } from '../../providers/wallet'
 import { FlowContext } from '../../providers/flow'
 import { isBurn, isIssuance, prettyDate } from '../../lib/format'
+import { defaultFee } from '../../lib/constants'
 import ErrorMessage from '../../components/Error'
 import { extractError } from '../../lib/error'
 import Header from '../../components/Header'
@@ -194,7 +195,7 @@ export default function Transaction() {
       : issuanceTx
         ? t('transaction.amountIssued')
         : burnTx
-? t('transaction.amountBurned')
+          ? t('transaction.amountBurned')
           : exitTx
             ? 'Amount exited'
             : tx.type === 'sent'
@@ -270,7 +271,7 @@ export default function Transaction() {
         date,
         destination: tx.type === 'sent' && !boardingTx && !issuanceTx && !burnTx ? tx.destination : undefined,
         fees,
-// An exit is the one row whose txid is genuinely onchain, so it links
+        // An exit is the one row whose txid is genuinely onchain, so it links
         // to the block explorer rather than to Arkade's. Without the guard its
         // `redeemTxid` alone would class it offchain and send the link to the
         // vmempool explorer, which has never heard of the transaction.

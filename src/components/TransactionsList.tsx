@@ -107,7 +107,7 @@ const TransactionLine = ({
     return <span className={`activity-row__icon activity-row__icon--${iconTone}`}>{icon}</span>
   }
 
-const kind =
+  const kind =
     lnSwapKind ??
     (swap
       ? swapStatus === 'pending'

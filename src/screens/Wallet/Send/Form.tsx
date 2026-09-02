@@ -565,7 +565,7 @@ export default function SendForm() {
         setSendInfo({ ...sendInfo, arkAddress: '' })
       }
     }
-// everything is ok, clean error
+    // everything is ok, clean error
     setRecipientError('')
   }, [receivingAddresses, sendInfo.address, sendInfo.arkAddress, sendInfo.invoice, sendInfo.lnUrl])
 
@@ -935,7 +935,7 @@ export default function SendForm() {
     )
   }
 
-if (scan) {
+  if (scan) {
     // an element, never a component defined here: a fresh component type on
     // every render remounts the scanner, and each remount asks for the camera
     const scanner = (
@@ -1138,7 +1138,7 @@ if (scan) {
                   focus={focus === 'amount' && !isMobileBrowser}
                 />
               </FlexCol>
-{deductFromAmount ? <InfoLine color='orange' text={t('send.feesDeductedFromAmount')} /> : null}
+              {deductFromAmount ? <InfoLine color='orange' text={t('send.feesDeductedFromAmount')} /> : null}
             </FlexCol>
           </Padded>
         </Content>

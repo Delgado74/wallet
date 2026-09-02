@@ -507,8 +507,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       // see `getUnrolledVtxos`. Cheap: the worker answers both from its local
       // repo, so this is a postMessage, not a request.
       const unrolledVtxos = await getUnrolledVtxos(swWallet)
-      if (isFirstLoad)
-        setLoadingStatus(translate(config.language ?? detectLanguage(), 'loading.fetchingTransactions'))
+      if (isFirstLoad) setLoadingStatus(translate(config.language ?? detectLanguage(), 'loading.fetchingTransactions'))
       const activities = await getActivities(swWallet)
       // Before the metadata snapshot below, not after: `resolveExits` persists
       // what it learns, and the history memo reads a snapshot taken here, so a
@@ -519,8 +518,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       // has already written it (see providers/lnSwaps), so this pass only picks
       // up what the store says.
       const lnSends = await lnSendViews()
-      if (isFirstLoad)
-        setLoadingStatus(translate(config.language ?? detectLanguage(), 'loading.updatingBalance'))
+      if (isFirstLoad) setLoadingStatus(translate(config.language ?? detectLanguage(), 'loading.updatingBalance'))
       const { total, available, assets, availableAssets, unrolled } = await getBalance(swWallet)
       // An exited coin is no longer Arkade money: it cannot be spent offchain,
       // no batch can lift it back, and this wallet has no path that moves it —

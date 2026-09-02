@@ -30,7 +30,14 @@ const LOCKUP =
 // the contract row's business, not this store's.
 const script = { pkScript: ArkAddress.decode(LOCKUP).pkScript } as LnSendRecordInput['script']
 
-const secrets: ProvisionedKey = { pubkey: new Uint8Array(32).fill(0xab), descriptor: 'wpkh(...)/0' }
+const secrets: ProvisionedKey = {
+  pubkey: new Uint8Array(32).fill(0xab),
+  descriptor: 'wpkh(...)/0',
+  // The SDK now hands `pkScript` and `address` back with the key; the test
+  // fixture does not spend anything, so the same covenant values are reused.
+  pkScript: ArkAddress.decode(LOCKUP).pkScript,
+  address: LOCKUP,
+}
 
 const RFQ_ID = 'a'.repeat(64)
 

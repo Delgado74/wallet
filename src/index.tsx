@@ -59,40 +59,40 @@ root.render(
       <ConfigProvider>
         <LanguageProvider>
           <BackupProvider>
-          <AspProvider>
-            <AssetsProvider>
-              <NotificationsProvider>
-                <FiatProvider>
-                  <FlowProvider>
-                    <WalletProvider>
-                      <AssetSwapsProvider>
-                        <LnSwapsProvider>
-                          <LnReceiveProvider>
-                            <LimitsProvider>
-                              <FeesProvider>
-                                <OptionsProvider>
-                                  <NudgeProvider>
-                                    <AnnouncementProvider>
-                                      <ToastProvider>
-                                        <ErrorBoundary>
-                                          <App />
-                                        </ErrorBoundary>
-                                      </ToastProvider>
-                                    </AnnouncementProvider>
-                                  </NudgeProvider>
-                                </OptionsProvider>
-                              </FeesProvider>
-                            </LimitsProvider>
-                          </LnReceiveProvider>
-                        </LnSwapsProvider>
-                      </AssetSwapsProvider>
-                    </WalletProvider>
-                  </FlowProvider>
-                </FiatProvider>
-              </NotificationsProvider>
-            </AssetsProvider>
-          </AspProvider>
-        </BackupProvider>
+            <AspProvider>
+              <AssetsProvider>
+                <NotificationsProvider>
+                  <FiatProvider>
+                    <FlowProvider>
+                      <WalletProvider>
+                        <AssetSwapsProvider>
+                          <LnSwapsProvider>
+                            <LnReceiveProvider>
+                              <LimitsProvider>
+                                <FeesProvider>
+                                  <OptionsProvider>
+                                    <NudgeProvider>
+                                      <AnnouncementProvider>
+                                        <ToastProvider>
+                                          <ErrorBoundary>
+                                            <App />
+                                          </ErrorBoundary>
+                                        </ToastProvider>
+                                      </AnnouncementProvider>
+                                    </NudgeProvider>
+                                  </OptionsProvider>
+                                </FeesProvider>
+                              </LimitsProvider>
+                            </LnReceiveProvider>
+                          </LnSwapsProvider>
+                        </AssetSwapsProvider>
+                      </WalletProvider>
+                    </FlowProvider>
+                  </FiatProvider>
+                </NotificationsProvider>
+              </AssetsProvider>
+            </AspProvider>
+          </BackupProvider>
         </LanguageProvider>
       </ConfigProvider>
     </NavigationProvider>

@@ -34,7 +34,7 @@ export default function SendDetails() {
   const { calcOnchainOutputFee } = useContext(FeesContext)
   const isAssetSend = Boolean(sendInfo.account || sendInfo.assets?.length)
   const { utxoTxsAllowed, vtxoTxsAllowed } = useContext(LimitsContext)
-const { assetMetadataCache, balance, reloadWallet, svcWallet } = useContext(WalletContext)
+  const { assetMetadataCache, balance, reloadWallet, svcWallet } = useContext(WalletContext)
   const { trackLnSend } = useContext(LnSwapsContext)
   const { aspInfo } = useContext(AspContext)
   const { t } = useTranslation()
@@ -117,7 +117,7 @@ const { assetMetadataCache, balance, reloadWallet, svcWallet } = useContext(Wall
     }
   }, [sendInfo])
 
-const handleTxid = (txid: string) => {
+  const handleTxid = (txid: string) => {
     if (!txid) return handleError(t('send.errorSendingTransaction'))
     saveTransactionActivityMetadata(txid, {
       destination: details?.destination,
