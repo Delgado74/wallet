@@ -98,6 +98,7 @@ export default function ReceiveQRCode() {
   const isAssetReceive = assetId && assetId !== ''
   const hasError = Boolean(addressError)
 
+  const [generatingInvoice, setGeneratingInvoice] = useState(false)
   const [noPaymentMethods, setNoPaymentMethods] = useState(false)
   const [arkAddress, setArkAddress] = useState(offchainAddr)
   const [btcAddress, setBtcAddress] = useState(boardingAddr)
@@ -169,12 +170,14 @@ export default function ReceiveQRCode() {
     setLnReceiveError('')
     setLnRetryable(false)
     setLnHeldElsewhere(false)
+    setGeneratingInvoice(false)
     if (!svcWallet || isAssetReceive || satoshis <= 0) return
     if (recvInfo.pendingLnReceive?.payAmount && recvInfo.invoice) return
     const network = aspInfo.network as NetworkName
 
     let abandoned = false
     const negotiate = async () => {
+      setGeneratingInvoice(true)
       // per-network pin as the fallback co-signer key, for solver cards that
       // predate `emulator_pubkey` — the card's own value wins where it has one.
       const rendezvous = lnReceiveRendezvous(await discoverMarkets(network), getEmulatorPubkeyForNetwork(network))
@@ -199,6 +202,7 @@ export default function ReceiveQRCode() {
       // an invoice they have not seen, so this cannot be late — but the
       // ordering is what keeps the monitored set a superset of what is payable.
       await track(pending)
+      if (abandoned) return
       setLnReceiveError('')
       setRecvInfo((prev) => ({
         ...prev,
@@ -212,18 +216,22 @@ export default function ReceiveQRCode() {
       }))
     }
 
-    negotiate().catch((err) => {
-      if (abandoned) return
-      const error = extractError(err)
-      consoleError(error, 'error negotiating lightning receive')
-      setLnHeldElsewhere(err instanceof LnReceiveHeldElsewhere)
-      setLnReceiveError(error)
-      // The one failure here that is not "Lightning is unavailable": the quote
-      // was fine and our own contract store refused the write. No invoice came
-      // back, so the abandoned quote is inert and cannot be resumed — calling
-      // again is the fix, and it derives a fresh preimage and rfq id.
-      setLnRetryable(err instanceof LockupRegistrationFailed)
-    })
+    negotiate()
+      .catch((err) => {
+        if (abandoned) return
+        const error = extractError(err)
+        consoleError(error, 'error negotiating lightning receive')
+        setLnHeldElsewhere(err instanceof LnReceiveHeldElsewhere)
+        setLnReceiveError(error)
+        // The one failure here that is not "Lightning is unavailable": the quote
+        // was fine and our own contract store refused the write. No invoice came
+        // back, so the abandoned quote is inert and cannot be resumed — calling
+        // again is the fix, and it derives a fresh preimage and rfq id.
+        setLnRetryable(err instanceof LockupRegistrationFailed)
+      })
+      .finally(() => {
+        if (!abandoned) setGeneratingInvoice(false)
+      })
     // The amount changed under an in-flight negotiation, so its invoice would
     // be for the wrong number. Nothing to cancel on the solver — an unpaid hold
     // invoice simply expires.
@@ -308,6 +316,7 @@ export default function ReceiveQRCode() {
 
   // Handlers
   const handleShare = () => {
+    if (generatingInvoice) return
     setSharing(true)
     shareData(data)
       .catch(consoleError)
@@ -315,6 +324,7 @@ export default function ReceiveQRCode() {
   }
 
   const handleCopy = async (value: string) => {
+    if (generatingInvoice) return
     if (!prefersReducedMotion) hapticSubtle()
     await copyToClipboard(value)
     toast('Copied to clipboard')
@@ -323,6 +333,7 @@ export default function ReceiveQRCode() {
   }
 
   const handleCopyButton = async () => {
+    if (generatingInvoice) return
     if (!prefersReducedMotion) hapticSubtle()
     setShowCopySheet(true)
     if (qrCodeValue && copied !== qrCodeValue) {
@@ -387,7 +398,7 @@ export default function ReceiveQRCode() {
   const receiveLost = receiveState === 'refunded'
 
   const data = { title: 'Receive', text: qrCodeValue }
-  const shareDisabled = !canBrowserShareData(data) || sharing || hasError || noPaymentMethods
+  const shareDisabled = !canBrowserShareData(data) || sharing || hasError || noPaymentMethods || generatingInvoice
 
   // Whether an amount is currently requested. Keyed off assetMeta to match how
   // handleAmountConfirm/handleAmountClear decide between asset units and sats.
@@ -451,39 +462,75 @@ export default function ReceiveQRCode() {
                   ) : null}
                 </FlexCol>
               ) : null}
-              <button
-                type='button'
-                onClick={() => handleCopy(qrCodeValue)}
-                onPointerDown={() => setQrTransform(prefersReducedMotion ? '' : 'scale(0.97)')}
-                onPointerUp={() => setQrTransform('')}
-                onPointerLeave={() => setQrTransform('')}
-                onPointerCancel={() => setQrTransform('')}
-                aria-label='Copy QR code'
-                style={{
-                  padding: 0,
-                  width: '100%',
-                  border: 'none',
-                  margin: '0 auto',
-                  display: 'block',
-                  marginTop: '5rem',
-                  maxWidth: '340px',
-                  cursor: 'pointer',
-                  background: 'none',
-                  transition: prefersReducedMotion
-                    ? 'none'
-                    : `transform 240ms cubic-bezier(${EASE_OUT_QUINT.join(',')})`,
-                  WebkitTapHighlightColor: 'transparent',
-                  touchAction: 'manipulation',
-                  transform: qrTransform,
-                }}
+              <div
+                className='receive-invoice-stage mt-20 aspect-square w-full max-w-85'
+                data-generating={generatingInvoice}
               >
-                <QrCode value={qrCodeValue} />
-              </button>
-              {satoshis > 0 ? (
-                <Text small color='neutral-500'>
-                  Requesting {prettyNumber(satoshis, 0)} {unitLabel}
-                </Text>
-              ) : null}
+                <div
+                  className='receive-invoice-loading flex flex-col items-center justify-center gap-2 text-center'
+                  aria-hidden={!generatingInvoice}
+                >
+                  <div className='receive-invoice-pixels mb-5 grid-cols-4 gap-1.25' aria-hidden='true'>
+                    {Array.from({ length: 16 }, (_, index) => (
+                      <span
+                        key={index}
+                        className='size-3 rounded-xs bg-purple-700 dark:bg-purple-300'
+                        style={{ animationDelay: `${index * 75}ms` }}
+                      />
+                    ))}
+                  </div>
+                  <div role='status' aria-live='polite'>
+                    <Text medium>Generating invoice…</Text>
+                  </div>
+                  <Text small color='neutral-500'>
+                    {generatingInvoice ? `Requesting ${prettyNumber(satoshis, 0)} ${unitLabel}` : '\u00a0'}
+                  </Text>
+                </div>
+                <button
+                  type='button'
+                  className='receive-invoice-qr'
+                  disabled={generatingInvoice}
+                  aria-hidden={generatingInvoice}
+                  onClick={() => handleCopy(qrCodeValue)}
+                  onPointerDown={() => setQrTransform(prefersReducedMotion ? '' : 'scale(0.97)')}
+                  onPointerUp={() => setQrTransform('')}
+                  onPointerLeave={() => setQrTransform('')}
+                  onPointerCancel={() => setQrTransform('')}
+                  aria-label='Copy QR code'
+                  style={{
+                    padding: 0,
+                    width: '100%',
+                    border: 'none',
+                    display: 'block',
+                    cursor: generatingInvoice ? 'default' : 'pointer',
+                    background: 'none',
+                    WebkitTapHighlightColor: 'transparent',
+                    touchAction: 'manipulation',
+                  }}
+                >
+                  <div
+                    style={{
+                      transform: qrTransform,
+                      transition: prefersReducedMotion
+                        ? 'none'
+                        : `transform 240ms cubic-bezier(${EASE_OUT_QUINT.join(',')})`,
+                    }}
+                  >
+                    <QrCode value={qrCodeValue} />
+                  </div>
+                </button>
+              </div>
+              <div
+                className='min-h-5'
+                aria-hidden={generatingInvoice}
+                style={{ visibility: generatingInvoice ? 'hidden' : 'visible' }}
+              >
+                {satoshis > 0 && !generatingInvoice ? (
+                  <Text small color='neutral-500'>
+                    Requesting {prettyNumber(satoshis, 0)} {unitLabel}
+                  </Text>
+                ) : null}
+              </div>
             </FlexCol>
           )}
         </Padded>
@@ -496,7 +543,7 @@ export default function ReceiveQRCode() {
             onClick={() => (isMobileBrowser ? setShowKeys(true) : setShowAmountSheet(true))}
             secondary
           />
-          <Button label='Copy' onClick={handleCopyButton} secondary />
+          <Button label='Copy' onClick={handleCopyButton} secondary disabled={generatingInvoice} />
         </FlexRow>
         <Button label='Share' onClick={handleShare} disabled={shareDisabled} />
       </ButtonsOnBottom>
