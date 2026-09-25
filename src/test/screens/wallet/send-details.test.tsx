@@ -156,4 +156,25 @@ describe('Send details refresh', () => {
     await waitFor(() => expect(send).toHaveBeenCalled())
     expect(reloadWallet).not.toHaveBeenCalled()
   })
+
+  it('localizes the arkd AMOUNT_TOO_LOW error on the lightning-exit path', async () => {
+    const reloadWallet = vi.fn(() => Promise.resolve())
+    const send = vi.fn(() =>
+      Promise.reject(
+        new Error(
+          'Failed to send bitcoin: Error: AMOUNT_TOO_LOW (15): Output #1 amount is lower than min vtxo amount: 330',
+        ),
+      ),
+    )
+
+    renderArkSend(reloadWallet, send)
+
+    fireEvent.click(await screen.findByText('Tap to Sign'))
+
+    await waitFor(() => expect(send).toHaveBeenCalled())
+    expect(
+      await screen.findByText(/Send failed: an output is below the onchain minimum/, {}, { timeout: 5000 }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/AMOUNT_TOO_LOW/)).not.toBeInTheDocument()
+  })
 })
