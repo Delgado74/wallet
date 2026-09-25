@@ -89,10 +89,10 @@ export default function Server() {
   if (blocked) {
     return (
       <>
-        <Header text='Server' back />
+        <Header text={t('settings.server')} back />
         <Content>
           <Padded>
-            <WarningBox text='Server settings are unavailable on mainnet.' />
+            <WarningBox text={t('settings.serverUnavailableOnMainnet')} />
           </Padded>
         </Content>
       </>

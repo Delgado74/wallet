@@ -2,6 +2,10 @@ export type LanguageCode = 'en' | 'es'
 
 export const translations = {
   en: {
+    table: {
+      keyboardNavIntro: 'Pressing Enter enables keyboard navigation of the table',
+      keyboardNavTitle: 'Title {title} with status {value}. Press Escape to exit keyboard navigation.',
+    },
     common: {
       cancel: 'Cancel',
       confirm: 'Confirm',
@@ -151,6 +155,7 @@ export const translations = {
       passwordChanged: 'Password changed',
       failedToUpdatePassword: 'Failed to update password',
       server: 'Server',
+      serverUnavailableOnMainnet: 'Server settings are unavailable on mainnet.',
       sameServer: 'Same server',
       unableToConnect: 'Unable to connect',
       serverUrl: 'Server URL',
@@ -765,6 +770,10 @@ export const translations = {
     },
   },
   es: {
+    table: {
+      keyboardNavIntro: 'Presionar Enter habilita la navegación con teclado de la tabla',
+      keyboardNavTitle: 'Título {title} con estado {value}. Presiona Escape para salir de la navegación con teclado.',
+    },
     common: {
       cancel: 'Cancelar',
       confirm: 'Confirmar',
@@ -914,6 +923,7 @@ export const translations = {
       passwordChanged: 'Contraseña cambiada',
       failedToUpdatePassword: 'Error al actualizar la contraseña',
       server: 'Servidor',
+      serverUnavailableOnMainnet: 'Los ajustes del servidor no están disponibles en mainnet.',
       sameServer: 'Mismo servidor',
       unableToConnect: 'No se pudo conectar',
       serverUrl: 'URL del servidor',
@@ -951,7 +961,7 @@ export const translations = {
       clear: 'Limpiar',
       exportToCsv: 'Exportar a archivo CSV',
       language: 'Idioma',
-      english: 'English',
+      english: 'Inglés',
       spanish: 'Español',
       auto: 'Auto',
       arkadeMint: 'Arkade Mint',
@@ -1149,7 +1159,7 @@ export const translations = {
     scanner: {
       pointAtQr: 'Apunta al código QR',
       unsupported: 'Escáner no soportado en este dispositivo',
-      permissionDenied: 'Permiso de cámara denegado',
+      permissionDenied: 'Permiso de notificaciones denegado',
       tryAgain: 'Reintentar',
       cameraError: 'Cámara no disponible',
     },

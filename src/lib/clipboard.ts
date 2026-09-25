@@ -2,15 +2,19 @@ import { Clipboard } from '@capacitor/clipboard'
 import { isNativePlatform } from './browser'
 import { consoleError } from './logs'
 
-export const copyToClipboard = async (text: string): Promise<void> => {
+export const copyToClipboard = async (text: string): Promise<boolean> => {
   try {
     if (isNativePlatform()) {
       await Clipboard.write({ string: text })
     } else if (navigator.clipboard) {
       await navigator.clipboard.writeText(text)
+    } else {
+      return false
     }
+    return true
   } catch (err) {
     consoleError(err, 'error writing to clipboard')
+    return false
   }
 }
 
