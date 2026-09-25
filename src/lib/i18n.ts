@@ -19,6 +19,7 @@ export const translations = {
       unknown: 'Unknown',
       copied: 'Copied!',
       copiedToClipboard: 'Copied to clipboard',
+      failedToCopy: 'Failed to copy',
       learnMore: 'Learn more',
       dismiss: 'Dismiss',
       tryAgain: 'Try again',
@@ -52,7 +53,7 @@ export const translations = {
       gotIt: 'Got it',
     },
     init: {
-      welcome: 'Welcome to CanoArk 👾',
+      welcome: 'Welcome to Arkade 👾',
       tagline1: 'Fast payments, swaps, and more',
       tagline2: 'Access Lightning, mint assets, and more. All secured by Bitcoin',
       tagline3: 'Stay in control. Settle and withdraw on your terms',
@@ -89,7 +90,7 @@ export const translations = {
         "Enter your 12-word recovery phrase, or a private key starting with 'nsec' or a raw hex key. Do not share it with anyone.",
     },
     browser: {
-      welcome: 'Welcome to CanoArk 👾',
+      welcome: 'Welcome to Arkade 👾',
       notSupported: "Won't work in this browser.",
       copyLink: 'Copy link',
       copied: 'Copied',
@@ -778,6 +779,7 @@ export const translations = {
       unknown: 'Desconocido',
       copied: '¡Copiado!',
       copiedToClipboard: 'Copiado al portapapeles',
+      failedToCopy: 'No se pudo copiar',
       learnMore: 'Aprender más',
       dismiss: 'Descartar',
       tryAgain: 'Reintentar',
@@ -811,7 +813,7 @@ export const translations = {
       gotIt: 'Entendido',
     },
     init: {
-      welcome: 'Bienvenido a CanoArk 👾',
+      welcome: 'Bienvenido a Arkade 👾',
       tagline1: 'Pagos rápidos, swaps y más',
       tagline2: 'Accede a Lightning, acuña activos y más. Todo protegido por Bitcoin',
       tagline3: 'Tú controlas. Liquida y retira cuando quieras',
@@ -848,7 +850,7 @@ export const translations = {
         'Introduce tu frase de recuperación de 12 palabras, o una clave privada que empiece con "nsec" o una clave hexadecimal. No la compartas con nadie.',
     },
     browser: {
-      welcome: 'Bienvenido a CanoArk 👾',
+      welcome: 'Bienvenido a Arkade 👾',
       notSupported: 'No funciona en este navegador.',
       copyLink: 'Copiar enlace',
       copied: 'Copiado',

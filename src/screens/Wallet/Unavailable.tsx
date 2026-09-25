@@ -33,7 +33,7 @@ export default function Unavailable() {
     <CenterScreen>
       <WalletNewIcon />
       <Text bigger heading medium>
-        CanoArk
+        Arkade Wallet
       </Text>
       <ErrorMessage error text={error} />
     </CenterScreen>

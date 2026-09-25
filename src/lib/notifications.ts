@@ -9,7 +9,7 @@ export const requestPermission = async (): Promise<boolean> => {
 export const sendNotification = (title: string, body: string) => {
   if (!notificationApiSupport) return
   if (Notification.permission !== 'granted') return
-  const options = { body, icon: '/canoark-icon-192.png' }
+  const options = { body, icon: '/arkade-icon-192.png' }
   try {
     new Notification(title, options)
   } catch {

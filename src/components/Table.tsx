@@ -6,6 +6,7 @@ import { useState } from 'react'
 import Focusable from './Focusable'
 import { copyToClipboard } from '../lib/clipboard'
 import { useToast } from './Toast'
+import { useTranslation } from '../providers/language'
 import { hapticSubtle } from '../lib/haptics'
 import ExternalLinkIcon from '../icons/ExternalLink'
 
@@ -17,11 +18,12 @@ export default function Table({ data, variant = 'default' }: { data: TableData; 
   const [focused, setFocused] = useState(false)
 
   const { toast } = useToast()
+  const { t } = useTranslation()
 
   const copy = (value: string) => {
     hapticSubtle()
     copyToClipboard(value)
-    toast('Copied to clipboard')
+    toast(t('common.copiedToClipboard'))
   }
 
   const focusOnFirstRow = () => {
