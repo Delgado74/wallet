@@ -128,7 +128,7 @@ const renderWithTrack = (satoshis = 10_000) => render(tree(satoshis))
 
 beforeEach(() => {
   track.mockReset()
-setRecvInfo.mockClear()
+  setRecvInfo.mockClear()
   rfqMock.negotiateError = null
   vi.mocked(lnReceiveRendezvous).mockClear()
 })

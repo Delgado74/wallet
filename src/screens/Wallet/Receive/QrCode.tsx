@@ -332,7 +332,7 @@ export default function ReceiveQRCode() {
     if (generatingInvoice) return
     if (!prefersReducedMotion) hapticSubtle()
     await copyToClipboard(value)
-    toast('Copied to clipboard')
+    toast(t('common.copiedToClipboard'))
     setShowCopySheet(false)
     setCopied(value)
   }
@@ -343,7 +343,7 @@ export default function ReceiveQRCode() {
     setShowCopySheet(true)
     if (qrCodeValue && copied !== qrCodeValue) {
       await copyToClipboard(qrCodeValue)
-      toast('Copied to clipboard')
+      toast(t('common.copiedToClipboard'))
       setCopied(qrCodeValue)
     }
   }
@@ -435,13 +435,13 @@ export default function ReceiveQRCode() {
 
   return (
     <>
-      <Header text='Receive' back={() => navigate(Pages.Wallet)} />
+      <Header text={t('wallet.receive')} back={() => navigate(Pages.Wallet)} />
       <Content noFade>
         <Padded>
           {hasError ? (
             <ErrorMessage error text={`Failed to get address: ${addressError}`} />
           ) : !addressesLoaded || (!qrCodeValue && !noPaymentMethods) ? (
-            <LoadingLogo text='Loading...' />
+            <LoadingLogo text={t('common.loading')} />
           ) : noPaymentMethods ? (
             <p>No valid payment methods available for this amount</p>
           ) : (
