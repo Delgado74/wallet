@@ -21,7 +21,7 @@ import {
   removePrivateKeyRecovery,
 } from '../../lib/privateKey'
 import { hasMnemonic, getMnemonic, setMnemonic, setMnemonicRecovery, removeMnemonicRecovery } from '../../lib/mnemonic'
-import { canRecoverWithPassword, recoverSecretWithPassword } from '../../lib/recovery'
+import { recoverSecretWithPassword } from '../../lib/recovery'
 import { useTranslation } from '../../providers/language'
 
 export default function Password() {
@@ -41,11 +41,26 @@ export default function Password() {
       if (noPassword) setOldPassword(defaultPassword)
     })
   }, [])
-
   useEffect(() => {
     if (!oldPassword) return
     const checkPassword = async () => {
-      const isValid = (await isValidPassword(oldPassword)) || (await canRecoverWithPassword(oldPassword))
+      let isValid = await isValidPassword(oldPassword)
+      let recovered = false
+      if (!isValid) {
+        try {
+          recovered = await recoverSecretWithPassword(oldPassword)
+          isValid = recovered
+        } catch {
+          isValid = false
+        }
+      }
+      if (recovered) {
+        // Password opened the recovery vault: the wallet re-sealed to
+        // password-only unlock, so drop the orphaned device secret and clear
+        // the flags that were hiding the biometric re-enroll button.
+        await clearBiometricUnlock()
+        updateWallet({ ...wallet, lockedByBiometrics: false, passkeyId: undefined })
+      }
       setError(isValid ? '' : t('unlock.invalidPassword'))
       setAuthenticated(isValid)
     }

@@ -30,7 +30,11 @@ export default function NeedsPassword({ error, onPassword }: NeedsPasswordProps)
   const handleClick = () => onPassword(password)
   // Biometric-locked wallets keep a password path: the recovery vault lets the
   // user's own password back in if the device secret is ever lost or replaced.
+  // Both paths stay reachable within the screen — entering the password view
+  // must not strand the user away from the biometric button.
   const biometricOnly = wallet.lockedByBiometrics && !usePassword
+  const toggleLink =
+    'w-full cursor-pointer text-center text-sm font-medium text-primary underline underline-offset-4 hover:opacity-80'
 
   return (
     <>
@@ -42,11 +46,7 @@ export default function NeedsPassword({ error, onPassword }: NeedsPasswordProps)
                 <LockIcon big />
                 <Text centered>{t('unlock.unlockWithPasskey')}</Text>
               </CenterScreen>
-              <button
-                type='button'
-                onClick={() => setUsePassword(true)}
-                className='w-full cursor-pointer text-center text-sm font-medium text-primary underline underline-offset-4 hover:opacity-80'
-              >
+              <button type='button' onClick={() => setUsePassword(true)} className={toggleLink}>
                 {t('unlock.enterPassword')}
               </button>
             </>
@@ -59,6 +59,11 @@ export default function NeedsPassword({ error, onPassword }: NeedsPasswordProps)
                 onEnter={handleClick}
                 placeholder={t('unlock.passwordPlaceholder')}
               />
+              {wallet.lockedByBiometrics ? (
+                <button type='button' onClick={() => setUsePassword(false)} className={toggleLink}>
+                  {t('unlock.unlockWithPasskey')}
+                </button>
+              ) : null}
               <ErrorMessage text={error} error={Boolean(error)} />
             </FlexCol>
           )}
