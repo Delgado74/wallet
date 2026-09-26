@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { execSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
@@ -67,6 +68,18 @@ function patchVariables(text) {
   return { out: text.replace(m[0], m[0].replace(/\d+/, String(MIN_SDK))), changed: true }
 }
 
+// Android refuses to install an APK over an installed one with the same
+// versionCode. Every CI build regenerates android/ (versionCode 1 from the
+// Capacitor template), so without a bump users end up testing stale builds.
+// Commit count grows monotonically on this fork's append-only branch history,
+// which keeps the OTA-able code strictly increasing across releases.
+function patchVersion(text) {
+  const count = Number(execSync('git rev-list HEAD --count').toString().trim())
+  const withCode = text.replace(/versionCode\s+\d+/, `versionCode ${count}`)
+  const out = withCode.replace(/versionName\s+"[^"]*"/, `versionName "1.0.${count}"`)
+  return { out, changed: out !== text }
+}
+
 const manifest = read(MANIFEST, 'AndroidManifest.xml')
 const m = patchManifest(manifest)
 if (m.changed) {
@@ -92,4 +105,12 @@ if (v.changed) {
   console.log(`[prepare-android] minSdkVersion elevado a ${MIN_SDK}`)
 } else {
   console.log(`[prepare-android] minSdkVersion ya es ${MIN_SDK} (idempotente)`)
+}
+
+const versioned = patchVersion(gradle)
+if (versioned.changed) {
+  writeFileSync(GRADLE, versioned.out)
+  console.log('[prepare-android] versionCode/versionName bumpados para OTA')
+} else {
+  console.log('[prepare-android] version ya era distinta de la plantilla (idempotente)')
 }

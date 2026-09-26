@@ -78,6 +78,17 @@ jobs:
           grep -q 'android.permission.CAMERA' android/app/src/main/AndroidManifest.xml
           grep -q 'minSdkVersion = 26' android/variables.gradle
 
+      - name: Install stable debug keystore
+        # Reproducible signing: CI runners regenerate ~/.android/debug.keystore
+        # on every run, which changes the APK signature and makes Android reject
+        # installing a new build over the previous one. This committed debug key
+        # (public, standard android/android credentials) keeps every build signed
+        # identically so updates install cleanly once versionCode also grows.
+        run: |
+          mkdir -p "$HOME/.android"
+          cp keystore/debug.keystore "$HOME/.android/debug.keystore"
+          chmod 600 "$HOME/.android/debug.keystore"
+
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 

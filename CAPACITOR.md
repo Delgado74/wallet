@@ -86,6 +86,24 @@ Local connectivity constraints make CI the source of truth. Every push to the
 type-check, unit + e2e tests (Playwright), and the Android build producing the
 APK artifact. On-device smoke tests are run manually against the artifact.
 
+### Why installs can run stale (signing + versioning)
+
+Each CI run regenerates the native project, and a fresh runner also
+regenerates the debug signing key. Two things were needed so a new build can
+actually replace the one already installed on a device:
+
+- **Fixed debug keystore.** `keystore/debug.keystore` (standard public
+  `android`/`android` debug credentials) is committed and copied to
+  `~/.android/debug.keystore` in CI, so every build shares the same signature.
+- **Monotonic versionCode.** `scripts/prepare-android.mjs` bumps
+  `versionCode`/`versionName` from the commit count (`git rev-list HEAD
+  --count`), which grows on the append-only branch history. Android refuses an
+  install over an equal `versionCode`.
+
+Builds produced before this landed were signed with throwaway runner keys, so
+a device running one of those needs a **one-time uninstall** before the first
+signed build can be installed; from then on, later artifacts update in place.
+
 ## Branch map
 
 - `feature/capacitor-apk` — original v8 migration (phase A).
