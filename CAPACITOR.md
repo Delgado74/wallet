@@ -1,7 +1,8 @@
 # Capacitor line in this fork
 
 This file documents the Capacitor/Android workstream of this fork. It doubles
-as the source text for the upstream issue that introduces the line.
+as the source text for the upstream issue that introduces the line
+(arkade-os/wallet#1029).
 
 ## Context
 
