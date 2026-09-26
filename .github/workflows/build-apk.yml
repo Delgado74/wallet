@@ -52,16 +52,16 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Prepare Android manifest (camera + ML Kit)
+      - name: Prepare Android manifest (camera + minSdk)
         run: node scripts/prepare-android.mjs
 
       - name: Prepare service worker routing in MainActivity
         run: node scripts/prepare-service-worker.mjs
 
-      - name: Verify camera permissions in manifest
+      - name: Verify camera permissions and minSdk
         run: |
           grep -q 'android.permission.CAMERA' android/app/src/main/AndroidManifest.xml
-          grep -q 'com.google.mlkit.vision.DEPENDENCIES' android/app/src/main/AndroidManifest.xml
+          grep -q 'minSdkVersion = 26' android/variables.gradle
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
