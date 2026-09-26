@@ -1,90 +1,45 @@
-import {
-  hasMnemonic,
-  getMnemonic,
-  setMnemonic,
-  hasMnemonicRecovery,
-  getMnemonicRecovery,
-  removeMnemonicRecovery,
-} from './mnemonic'
-import {
-  getPrivateKey,
-  setPrivateKey,
-  hasPrivateKeyRecovery,
-  getPrivateKeyRecovery,
-  removePrivateKeyRecovery,
-} from './privateKey'
+import { hasMnemonic, getMnemonic, hasMnemonicRecovery, getMnemonicRecovery } from './mnemonic'
+import { getPrivateKey, hasPrivateKeyRecovery, getPrivateKeyRecovery } from './privateKey'
+
+export type UnlockSecret = { kind: 'mnemonic'; value: string } | { kind: 'nsec'; value: Uint8Array }
 
 /**
- * Password recovery over the vault written when biometric unlock re-seals a
- * wallet (see `setMnemonicRecovery` / `setPrivateKeyRecovery`).
+ * Opens the wallet secret with a typed password, main blob first, password
+ * vault second.
  *
- * The primary blob is encrypted with a device-random password, so losing the
- * native secret orphans the wallet even though the user still knows their own
- * password. The recovery copy changes that; recovering re-seals the primary
- * blob with the typed password and discards the vault, i.e. it deliberately
- * converts the wallet back to password-only unlock. The caller is responsible
- * for clearing the device biometric secret and wallet flags afterwards.
+ * The primary blob is sealed with the user's password while biometric unlock
+ * is not enrolled, and with a device-random password once it is. In the
+ * enrolled case the vault — sealed with the user's OWN chosen password, see
+ * `setMnemonicRecovery` / `setPrivateKeyRecovery` — is the genuine second key:
+ * using the password to unlock NEVER revokes biometrics, and using biometrics
+ * never revokes the password. Losing one key (e.g. the device secret) leaves
+ * the other fully functional.
  *
- * Returns `false` when the password already decrypts the primary blob (a
- * no-op), `true` when it needed the recovery vault, and throws when neither
- * path opens the wallet.
+ * Pure read, no mutation. Returns `null` when neither path opens the wallet.
  */
-export const recoverSecretWithPassword = async (password: string): Promise<boolean> => {
+export const getSecretForUnlock = async (password: string): Promise<UnlockSecret | null> => {
   if (await hasMnemonic()) {
     try {
-      await getMnemonic(password)
-      return false
+      return { kind: 'mnemonic', value: await getMnemonic(password) }
     } catch {
-      if (!(await hasMnemonicRecovery())) throw new Error('Invalid password')
-      try {
-        const mnemonic = await getMnemonicRecovery(password)
-        await setMnemonic(mnemonic, password)
-        await removeMnemonicRecovery()
-        await removePrivateKeyRecovery()
-        return true
-      } catch {
-        throw new Error('Invalid password')
-      }
+      // fall through to the vault
+    }
+    if (!(await hasMnemonicRecovery())) return null
+    try {
+      return { kind: 'mnemonic', value: await getMnemonicRecovery(password) }
+    } catch {
+      return null
     }
   }
   try {
-    await getPrivateKey(password)
-    return false
+    return { kind: 'nsec', value: await getPrivateKey(password) }
   } catch {
-    if (!(await hasPrivateKeyRecovery())) throw new Error('Invalid password')
-    try {
-      const privateKey = await getPrivateKeyRecovery(password)
-      await setPrivateKey(privateKey, password)
-      await removePrivateKeyRecovery()
-      await removeMnemonicRecovery()
-      return true
-    } catch {
-      throw new Error('Invalid password')
-    }
+    // fall through to the vault
   }
-}
-
-/**
- * Non-destructive availability check: does this password open the recovery
- * vault? Used to authenticate a biometric-locked wallet on its change screen
- * without touching storage; the mutation belongs to
- * {@link recoverSecretWithPassword}.
- */
-export const canRecoverWithPassword = async (password: string): Promise<boolean> => {
-  if (await hasMnemonic()) {
-    if (!(await hasMnemonicRecovery())) return false
-    try {
-      await getMnemonicRecovery(password)
-      return true
-    } catch {
-      return false
-    }
-  }
-  if (!(await hasPrivateKeyRecovery())) return false
+  if (!(await hasPrivateKeyRecovery())) return null
   try {
-    await getPrivateKeyRecovery(password)
-    return true
+    return { kind: 'nsec', value: await getPrivateKeyRecovery(password) }
   } catch {
-    return false
+    return null
   }
 }

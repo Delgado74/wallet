@@ -18,7 +18,7 @@ shell**, so the APK is continuously portable from the web code.
 
 - **Base: `master`.** The APK line is derived from the web codebase and tracks
   it (web changes are carried into the native build via cherry-picks). It is
-  deliberately *not* a divergent port.
+  deliberately _not_ a divergent port.
 - **Reference: `capacitor-exploration`.** The work takes that branch as
   architectural reference (runtime adapters, secure storage seam, biometric
   unlock) but reimplements it on the current `master` codebase rather than
@@ -62,12 +62,14 @@ priority, so it is parked.
 
 Addresses the production concerns raised in the design review of phase C:
 
-- **Password recovery vault.** A biometric-locked wallet whose device secret is
-  lost is otherwise irrecoverable without the seed phrase. A second copy of the
-  mnemonic/nsec, sealed with the user's *own* password, is kept when biometrics
-  are enrolled on a wallet that has a real password (never the default one).
-  The unlock screen gains a password fallback; recovering re-seals the wallet
-  to password-only unlock and removes the device secret.
+- **Password recovery vault, coexisting with biometrics.** A biometric-locked
+  wallet whose device secret is lost is otherwise irrecoverable without the
+  seed phrase. A second copy of the mnemonic/nsec, sealed with the user's _own_
+  password, is kept when biometrics are enrolled on a wallet that has a real
+  password (never the default one). The password and the biometric unlock
+  coexist: using either one never re-seals or revokes the other, and losing
+  one key leaves the other fully functional. The unlock screen shows both
+  paths simultaneously.
 - **Strong biometry only.** `allowDeviceCredential` is now `false` and Android
   biometry is pinned to `strong`, so a PIN/pattern shared credential and
   spoofable weak biometry cannot gate a decrypting secret. Devices without

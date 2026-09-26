@@ -50,9 +50,9 @@ import { lnSendViews, swapActivityInputs, type LnSendView } from '../lib/lnSendR
 import { assetSwapResolver } from '../lib/activity/assetSwapResolver'
 import { getAssetSwaps, swapActivityResolver } from '@arkade-os/swap'
 import { assetSwapRepository, type WalletAssetSwap } from '../lib/swapRepository'
-import { nsecToPrivateKey, getPrivateKey, noUserDefinedPassword } from '../lib/privateKey'
+import { nsecToPrivateKey, noUserDefinedPassword } from '../lib/privateKey'
 import { hasMnemonic, getMnemonic, deriveNostrKeyFromMnemonic } from '../lib/mnemonic'
-import { recoverSecretWithPassword } from '../lib/recovery'
+import { getSecretForUnlock } from '../lib/recovery'
 import { clearSecrets } from '../lib/secretStore'
 import { clearBiometricUnlock } from '../lib/biometricUnlock'
 import { resolveWalletMode } from '../lib/walletMode'
@@ -936,20 +936,13 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   const unlockWallet = async (password: string) => {
     try {
-      const recovered = await recoverSecretWithPassword(password)
+      const secret = await getSecretForUnlock(password)
+      if (!secret) throw new Error('Invalid password')
       setAuthState('authenticated')
-      if (recovered) {
-        // Recovering with the user's own password re-sealed the wallet back to
-        // password-only unlock: drop the orphaned device secret and flags.
-        await clearBiometricUnlock()
-        updateWallet({ ...wallet, lockedByBiometrics: false, passkeyId: undefined })
-      }
-      if (await hasMnemonic()) {
-        const mnemonic = await getMnemonic(password)
-        await initWallet({ mnemonic })
+      if (secret.kind === 'mnemonic') {
+        await initWallet({ mnemonic: secret.value })
       } else {
-        const privateKey = await getPrivateKey(password)
-        await initWallet({ privateKey })
+        await initWallet({ privateKey: secret.value })
       }
     } catch (err) {
       setAuthState('locked')

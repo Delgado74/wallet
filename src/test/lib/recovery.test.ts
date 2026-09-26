@@ -2,10 +2,9 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   setMnemonic,
   getMnemonic,
-  hasMnemonic,
   setMnemonicRecovery,
-  getMnemonicRecovery,
   hasMnemonicRecovery,
+  getMnemonicRecovery,
   removeMnemonicRecovery,
 } from '../../lib/mnemonic'
 import {
@@ -15,7 +14,7 @@ import {
   hasPrivateKeyRecovery,
   getPrivateKeyRecovery,
 } from '../../lib/privateKey'
-import { recoverSecretWithPassword, canRecoverWithPassword } from '../../lib/recovery'
+import { getSecretForUnlock } from '../../lib/recovery'
 import { clearSecrets } from '../../lib/secretStore'
 import { MNEMONIC_RECOVERY_STORAGE_KEY, NSEC_RECOVERY_STORAGE_KEY } from '../../lib/storageKeys'
 
@@ -24,12 +23,73 @@ const userPassword = 'my-own-password'
 const devicePassword = 'device-random-secret'
 const testPrivateKey = Uint8Array.from({ length: 32 }, (_, i) => i)
 
-describe('password recovery vault', () => {
+describe('password unlock coexisting with biometrics', () => {
   beforeEach(() => {
     localStorage.clear()
   })
 
-  it('recovery blob round-trips the mnemonic', async () => {
+  it('reads from the main blob while it is sealed with the user password', async () => {
+    await setMnemonic(testMnemonic, userPassword)
+    await setMnemonicRecovery(testMnemonic, userPassword)
+
+    await expect(getSecretForUnlock(userPassword)).resolves.toEqual({ kind: 'mnemonic', value: testMnemonic })
+    // Coexistence: nothing is re-sealed, wiped, or revoked by the read.
+    await expect(getMnemonic(userPassword)).resolves.toBe(testMnemonic)
+    expect(await hasMnemonicRecovery()).toBe(true)
+  })
+
+  it('opens the vault (second key) when the main blob is device-sealed and leaves both keys live', async () => {
+    await setMnemonic(testMnemonic, userPassword)
+    await setMnemonicRecovery(testMnemonic, userPassword)
+    await setMnemonic(testMnemonic, devicePassword)
+
+    await expect(getSecretForUnlock(userPassword)).resolves.toEqual({ kind: 'mnemonic', value: testMnemonic })
+
+    // Biometrics still work: the device secret is untouched.
+    await expect(getMnemonic(devicePassword)).resolves.toBe(testMnemonic)
+    // The password still works: the vault is intact.
+    await expect(getMnemonicRecovery(userPassword)).resolves.toBe(testMnemonic)
+    expect(await hasMnemonicRecovery()).toBe(true)
+  })
+
+  it('prefers the main blob over the vault for a matching password', async () => {
+    await setMnemonic(testMnemonic, userPassword)
+    await setMnemonicRecovery('other secret', userPassword)
+
+    await expect(getSecretForUnlock(userPassword)).resolves.toEqual({ kind: 'mnemonic', value: testMnemonic })
+  })
+
+  it('falls back to the vault when the main blob rejects the password', async () => {
+    await setMnemonic(testMnemonic, devicePassword)
+    await setMnemonicRecovery(testMnemonic, userPassword)
+
+    await expect(getSecretForUnlock(userPassword)).resolves.toEqual({ kind: 'mnemonic', value: testMnemonic })
+    await expect(getSecretForUnlock('wrong')).resolves.toBeNull()
+    expect(await hasMnemonicRecovery()).toBe(true)
+  })
+
+  it('returns null when there is no read path for the password', async () => {
+    await setMnemonic(testMnemonic, devicePassword)
+    await expect(getSecretForUnlock(userPassword)).resolves.toBeNull()
+    await expect(getSecretForUnlock('wrong')).resolves.toBeNull()
+  })
+
+  it('opens an nsec wallet through the main blob and the vault', async () => {
+    await setPrivateKey(testPrivateKey, userPassword)
+    await setPrivateKeyRecovery(testPrivateKey, userPassword)
+    await setPrivateKey(testPrivateKey, devicePassword)
+
+    await expect(getSecretForUnlock(userPassword)).resolves.toEqual({ kind: 'nsec', value: testPrivateKey })
+    await expect(getPrivateKey(devicePassword)).resolves.toEqual(testPrivateKey)
+    expect(await hasPrivateKeyRecovery()).toBe(true)
+  })
+
+  it('returns null for an nsec wallet with no read path', async () => {
+    await setPrivateKey(testPrivateKey, devicePassword)
+    await expect(getSecretForUnlock(userPassword)).resolves.toBeNull()
+  })
+
+  it('vault round-trips and removes independently', async () => {
     await setMnemonicRecovery(testMnemonic, userPassword)
     expect(await hasMnemonicRecovery()).toBe(true)
     expect(await getMnemonicRecovery(userPassword)).toBe(testMnemonic)
@@ -38,73 +98,14 @@ describe('password recovery vault', () => {
     expect(await hasMnemonicRecovery()).toBe(false)
   })
 
-  it('recovers a mnemonic re-sealed under the device password', async () => {
-    await setMnemonic(testMnemonic, userPassword)
-    await setMnemonicRecovery(testMnemonic, userPassword)
-    // Simulate biometric enrollment re-sealing the primary blob with the
-    // device-random password.
-    await setMnemonic(testMnemonic, devicePassword)
-
-    const recovered = await recoverSecretWithPassword(userPassword)
-
-    expect(recovered).toBe(true)
-    expect(await hasMnemonicRecovery()).toBe(false)
-    expect(await getMnemonic(userPassword)).toBe(testMnemonic)
-    await expect(getMnemonic(devicePassword)).rejects.toThrow()
-  })
-
-  it('is a no-op when the password still opens the primary blob', async () => {
-    await setMnemonic(testMnemonic, userPassword)
-    await setMnemonicRecovery(testMnemonic, userPassword)
-
-    expect(await recoverSecretWithPassword(userPassword)).toBe(false)
-    expect(await hasMnemonicRecovery()).toBe(true)
-  })
-
-  it('throws Invalid password on wrong recovery password', async () => {
-    await setMnemonic(testMnemonic, devicePassword)
-    await setMnemonicRecovery(testMnemonic, userPassword)
-
-    await expect(recoverSecretWithPassword('wrong')).rejects.toThrow('Invalid password')
-    expect(await hasMnemonicRecovery()).toBe(true)
-  })
-
-  it('throws Invalid password when no recovery vault exists', async () => {
-    await setMnemonic(testMnemonic, devicePassword)
-    await expect(recoverSecretWithPassword(userPassword)).rejects.toThrow('Invalid password')
-  })
-
-  it('canRecoverWithPassword is non-destructive', async () => {
-    await setMnemonic(testMnemonic, devicePassword)
-    await setMnemonicRecovery(testMnemonic, userPassword)
-
-    expect(await canRecoverWithPassword(userPassword)).toBe(true)
-    expect(await canRecoverWithPassword('wrong')).toBe(false)
-    expect(await hasMnemonicRecovery()).toBe(true)
-    await expect(getMnemonic(devicePassword)).resolves.toBe(testMnemonic)
-  })
-
-  it('recovers an nsec-based wallet the same way', async () => {
-    await setPrivateKey(testPrivateKey, userPassword)
-    await setPrivateKeyRecovery(testPrivateKey, userPassword)
-    await setPrivateKey(testPrivateKey, devicePassword)
-
-    const recovered = await recoverSecretWithPassword(userPassword)
-
-    expect(recovered).toBe(true)
-    expect(await hasPrivateKeyRecovery()).toBe(false)
-    expect(await getPrivateKey(userPassword)).toEqual(testPrivateKey)
-    await expect(getPrivateKey(devicePassword)).rejects.toThrow()
-  })
-
-  it('nsec recovery round-trips independently', async () => {
+  it('nsec vault round-trips independently', async () => {
     await setPrivateKeyRecovery(testPrivateKey, userPassword)
     expect(await hasPrivateKeyRecovery()).toBe(true)
     expect(await getPrivateKeyRecovery(userPassword)).toEqual(testPrivateKey)
     await expect(getPrivateKeyRecovery('wrong')).rejects.toThrow()
   })
 
-  it('clearSecrets wipes recovery blobs', async () => {
+  it('clearSecrets wipes both vault blobs', async () => {
     await setMnemonicRecovery(testMnemonic, userPassword)
     await setPrivateKeyRecovery(testPrivateKey, userPassword)
     expect(localStorage.getItem(MNEMONIC_RECOVERY_STORAGE_KEY)).not.toBeNull()
@@ -114,18 +115,5 @@ describe('password recovery vault', () => {
 
     expect(localStorage.getItem(MNEMONIC_RECOVERY_STORAGE_KEY)).toBeNull()
     expect(localStorage.getItem(NSEC_RECOVERY_STORAGE_KEY)).toBeNull()
-  })
-
-  it('mnemonic recovery clears the opposite vault type', async () => {
-    await setMnemonic(testMnemonic, userPassword)
-    await setMnemonicRecovery(testMnemonic, userPassword)
-    // Registers as an mnemonic wallet after switching sealers.
-    await setMnemonic(testMnemonic, devicePassword)
-
-    await recoverSecretWithPassword(userPassword)
-
-    expect(await hasMnemonicRecovery()).toBe(false)
-    expect(await hasPrivateKeyRecovery()).toBe(false)
-    expect(await hasMnemonic()).toBe(true)
   })
 })
