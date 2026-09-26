@@ -138,6 +138,7 @@ export const translations = {
       notificationsUnsupported:
         "Your browser does not support the Notifications API. If on iOS you'll need to 'Add to homescreen' and be running iOS 16.4 or higher.",
       changePassword: 'Change password',
+      useBiometrics: 'Use biometrics',
       success: 'Success',
       lock: 'Lock',
       noPasswordDefined: 'No password defined',
@@ -519,7 +520,7 @@ export const translations = {
       appAsking: '{app} is asking your wallet to do this',
       clear: 'Clear',
       toggleCurrency: 'Toggle currency',
-      noPasswordYolo: 'No password, YOLO',
+      noPasswordYolo: 'Continue without a password',
       passwordsMustMatch: 'Passwords must match',
       savePassword: 'Save password',
       passwordMinChars: '8 characters minimum',
@@ -898,6 +899,7 @@ export const translations = {
       notificationsUnsupported:
         'Tu navegador no soporta la API de Notificaciones. En iOS necesitas "Añadir a pantalla de inicio" y tener iOS 16.4 o superior.',
       changePassword: 'Cambiar contraseña',
+      useBiometrics: 'Usar datos biométricos',
       success: 'Éxito',
       lock: 'Bloqueo',
       noPasswordDefined: 'Sin contraseña definida',
@@ -1281,7 +1283,7 @@ export const translations = {
       appAsking: '{app} te pide que tu wallet haga esto',
       clear: 'Limpiar',
       toggleCurrency: 'Cambiar moneda',
-      noPasswordYolo: 'Sin contraseña, a la de perder',
+      noPasswordYolo: 'Continuar sin contraseña',
       passwordsMustMatch: 'Las contraseñas deben coincidir',
       savePassword: 'Guardar contraseña',
       passwordMinChars: 'mínimo 8 caracteres',
