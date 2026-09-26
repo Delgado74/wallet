@@ -38,6 +38,7 @@ jobs:
       - name: Type-check
         run: |
           set +e
+          pnpm git-info
           pnpm exec tsc --noEmit > /tmp/tsc.log 2>&1
           TSC_EC=$?
           echo "tsc exit code: ${TSC_EC}"
