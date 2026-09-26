@@ -6,6 +6,7 @@ on:
     branches:
       - feature/capacitor-apk
       - feat/capacitor-v8-secure
+      - feat/capacitor-v8-biometrics
 
 jobs:
   build:
