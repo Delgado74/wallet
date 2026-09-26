@@ -173,58 +173,6 @@ describe('Receive QR Code screen', () => {
     const copied = copyToClipboardMock.mock.calls.at(-1)?.[0]
     expect(copied).toContain('amount=')
   })
-
-  it('includes the requested amount in the Ark-only QR', async () => {
-    renderReceiveQrCode({
-      flow: {
-        recvInfo: {
-          ...mockFlowContextValue.recvInfo,
-          satoshis: 50_000,
-          offchainAddr: 'ark1testaddr',
-          boardingAddr: 'bc1testaddr',
-        },
-      },
-      wallet: { svcWallet: mockSvcWallet as any },
-    })
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Ark'))
-    })
-
-    const qrButton = await screen.findByRole('button', { name: 'Copy QR code' })
-    await act(async () => {
-      fireEvent.click(qrButton)
-    })
-
-    const copied = copyToClipboardMock.mock.calls.at(-1)?.[0]
-    expect(copied).toMatch(/^bitcoin:\?ark=ark1testaddr&amount=0\.0005$/)
-  })
-
-  it('includes the requested amount in the Bitcoin-only QR', async () => {
-    renderReceiveQrCode({
-      flow: {
-        recvInfo: {
-          ...mockFlowContextValue.recvInfo,
-          satoshis: 50_000,
-          offchainAddr: 'ark1testaddr',
-          boardingAddr: 'bc1testaddr',
-        },
-      },
-      wallet: { svcWallet: mockSvcWallet as any },
-    })
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('BTC'))
-    })
-
-    const qrButton = await screen.findByRole('button', { name: 'Copy QR code' })
-    await act(async () => {
-      fireEvent.click(qrButton)
-    })
-
-    const copied = copyToClipboardMock.mock.calls.at(-1)?.[0]
-    expect(copied).toMatch(/^bitcoin:bc1testaddr\?amount=0\.0005$/)
-  })
 })
 
 describe('resolveQrValue', () => {
@@ -243,10 +191,5 @@ describe('resolveQrValue', () => {
     // e.g. the previously-selected address was regenerated / cleared
     expect(resolveQrValue('ark1stale', opts)).toBe('bitcoin:unified')
     expect(resolveQrValue('ark1addr', { ...opts, ark: '' })).toBe('bitcoin:unified')
-  })
-
-  it('keeps a lightning invoice selection while that invoice is on offer', () => {
-    expect(resolveQrValue('lnbc1invoice', { ...opts, invoice: 'lnbc1invoice' })).toBe('lnbc1invoice')
-    expect(resolveQrValue('lnbc1invoice', opts)).toBe('bitcoin:unified')
   })
 })

@@ -48,6 +48,7 @@ import { FiatContext } from '../../../providers/fiat'
 import { AspContext } from '../../../providers/asp'
 import { AssetsContext } from '../../../providers/assets'
 import { LnReceiveContext } from '../../../providers/lnReceive'
+import { useTranslation } from '../../../providers/language'
 
 /**
  * Decide which value the QR should encode. Honours an explicit copy-sheet
@@ -62,6 +63,7 @@ export const resolveQrValue = (selected: string, options: { bip21: string; btc: 
 }
 
 export default function ReceiveQRCode() {
+  const { t } = useTranslation()
   const { aspInfo } = useContext(AspContext)
   const { isRegistered } = useContext(AssetsContext)
   const { config, useFiat } = useContext(ConfigContext)
@@ -430,7 +432,7 @@ export default function ReceiveQRCode() {
     )
   }
 
-  const amountLabel = hasAmount ? 'Edit amount' : 'Add amount'
+  const amountLabel = hasAmount ? t('receive.editAmount') : t('receive.addAmount')
   const unitLabel = assetMeta ? assetPresentation.ticker : 'sats'
 
   return (
@@ -439,11 +441,11 @@ export default function ReceiveQRCode() {
       <Content noFade>
         <Padded>
           {hasError ? (
-            <ErrorMessage error text={`Failed to get address: ${addressError}`} />
+            <ErrorMessage error text={t('receive.failedToGetAddress', { error: addressError ?? '' })} />
           ) : !addressesLoaded || (!qrCodeValue && !noPaymentMethods) ? (
             <LoadingLogo text={t('common.loading')} />
           ) : noPaymentMethods ? (
-            <p>No valid payment methods available for this amount</p>
+            <p>{t('receive.noPaymentMethods')}</p>
           ) : (
             <FlexCol gap='0.5rem' centered>
               {/* Two different things, told apart. "No solver" leaves the ark
@@ -459,11 +461,11 @@ export default function ReceiveQRCode() {
                 <FlexCol gap='0.25rem' centered>
                   <TextSecondary>
                     {lnHeldElsewhere
-                      ? 'Another tab is handling Lightning receives — close it to receive here'
-                      : `Lightning unavailable: ${lnReceiveError}`}
+                      ? t('receive.lightningHeldElsewhere')
+                      : t('receive.lightningUnavailable', { error: lnReceiveError })}
                   </TextSecondary>
                   {lnRetryable ? (
-                    <Button label='Try again' onClick={() => setNegotiateAttempt((n) => n + 1)} secondary />
+                    <Button label={t('common.tryAgain')} onClick={() => setNegotiateAttempt((n) => n + 1)} secondary />
                   ) : null}
                 </FlexCol>
               ) : null}
@@ -485,10 +487,12 @@ export default function ReceiveQRCode() {
                     ))}
                   </div>
                   <div role='status' aria-live='polite'>
-                    <Text medium>Generating invoice…</Text>
+                    <Text medium>{t('receive.generatingInvoice')}</Text>
                   </div>
                   <Text small color='neutral-500'>
-                    {generatingInvoice ? `Requesting ${prettyNumber(satoshis, 0)} ${unitLabel}` : '\u00a0'}
+                    {generatingInvoice
+                      ? t('receive.requestingAmount', { amount: prettyNumber(satoshis, 0), unit: unitLabel })
+                      : '\u00a0'}
                   </Text>
                 </div>
                 <button
@@ -501,7 +505,7 @@ export default function ReceiveQRCode() {
                   onPointerUp={() => setQrTransform('')}
                   onPointerLeave={() => setQrTransform('')}
                   onPointerCancel={() => setQrTransform('')}
-                  aria-label='Copy QR code'
+                  aria-label={t('receive.copyQrCode')}
                   style={{
                     padding: 0,
                     width: '100%',
@@ -532,7 +536,7 @@ export default function ReceiveQRCode() {
               >
                 {satoshis > 0 && !generatingInvoice ? (
                   <Text small color='neutral-500'>
-                    Requesting {prettyNumber(satoshis, 0)} {unitLabel}
+                    {t('receive.requestingAmount', { amount: prettyNumber(satoshis, 0), unit: unitLabel })}
                   </Text>
                 ) : null}
               </div>
@@ -557,7 +561,7 @@ export default function ReceiveQRCode() {
       <SheetModal isOpen={showAmountSheet} onClose={() => setShowAmountSheet(false)}>
         <FlexCol gap='1rem' padding='0.5rem 0'>
           <Text big bold>
-            Add amount
+            {t('receive.addAmount')}
           </Text>
           <InputAmount
             label='Amount'
@@ -617,12 +621,13 @@ function AddressList({
   onSelect: (value: string) => void
   copied: string
 }) {
+  const { t } = useTranslation()
   return (
     <FlexCol gap='0.75rem'>
       {bip21Uri ? (
         <AddressLine
           testId='bip21'
-          title='Unified'
+          title={t('receive.unified')}
           value={bip21Uri}
           onCopy={onCopy}
           onSelect={onSelect}
@@ -632,7 +637,7 @@ function AddressList({
       {arkAddress ? (
         <AddressLine
           testId='ark'
-          title='Arkade address'
+          title={t('receive.arkadeAddress')}
           value={arkAddress}
           onCopy={onCopy}
           onSelect={onSelect}
@@ -642,7 +647,7 @@ function AddressList({
       {btcAddress ? (
         <AddressLine
           testId='btc'
-          title='Bitcoin address'
+          title={t('receive.bitcoinAddress')}
           value={btcAddress}
           onCopy={onCopy}
           onSelect={onSelect}
@@ -652,7 +657,7 @@ function AddressList({
       {invoice ? (
         <AddressLine
           testId='invoice'
-          title='Lightning invoice'
+          title={t('receive.lightningInvoice')}
           value={invoice}
           onCopy={onCopy}
           onSelect={onSelect}
