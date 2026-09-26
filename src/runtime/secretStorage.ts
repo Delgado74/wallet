@@ -5,8 +5,9 @@ import { setSecretStore, type SecretStorageAdapter } from '../lib/secretStore'
 const nativeSecureStorage: SecretStorageAdapter = {
   async getItem(key) {
     try {
-      const { value } = await SecureStorage.get(key)
-      return value ?? null
+      const value = await SecureStorage.get(key)
+      if (value == null) return null
+      return typeof value === 'string' ? value : JSON.stringify(value)
     } catch {
       return null
     }
