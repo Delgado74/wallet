@@ -15,6 +15,13 @@ import type { SecurityRuntimeAdapter } from './types'
  * `kSecAccessControlBiometryCurrentSet`, Android Keystore
  * `setUserAuthenticationRequired`) is release work and deliberately not built
  * here.
+ *
+ * Prompt hardening: `allowDeviceCredential` is false and Android biometry is
+ * pinned to strong — the PIN/pattern fallback widens the unlock surface to a
+ * shared, low-entropy credential a wallet has no reason to trust, and the
+ * wallet's own password recovery vault covers the lockout a no-fallback prompt
+ * would otherwise create. Devices without strong biometry simply never offer
+ * the button (unlock stays on the wallet password).
  */
 
 let biometricModule: Promise<typeof import('@aparajita/capacitor-biometric-auth')> | undefined
@@ -27,14 +34,13 @@ const secureStorage = () => (secureModule ??= import('@aparajita/capacitor-secur
 const UNLOCK_SECRET_KEY = 'biometric_unlock_secret'
 
 const authenticate = async (reason: string): Promise<void> => {
-  const { BiometricAuth } = await biometricPlugin()
+  const { BiometricAuth, AndroidBiometryStrength } = await biometricPlugin()
   await BiometricAuth.authenticate({
     reason,
     cancelTitle: 'Cancel',
     androidTitle: 'Unlock Arkade Wallet',
-    // Falls back to device PIN/pattern/password, matching the platform
-    // behavior users expect when biometry fails or is temporarily locked out.
-    allowDeviceCredential: true,
+    allowDeviceCredential: false,
+    androidBiometryStrength: AndroidBiometryStrength.strong,
   })
 }
 
@@ -42,8 +48,10 @@ export const nativeSecurity: SecurityRuntimeAdapter = {
   isBiometricUnlockAvailable: async () => {
     try {
       const { BiometricAuth } = await biometricPlugin()
-      const { isAvailable } = await BiometricAuth.checkBiometry()
-      return isAvailable
+      const result = await BiometricAuth.checkBiometry()
+      // Both gates: weak/false-positive-prone biometry must not gate a secret
+      // that can decrypt the wallet.
+      return result.isAvailable && result.strongBiometryIsAvailable
     } catch {
       return false
     }

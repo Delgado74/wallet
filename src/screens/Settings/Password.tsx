@@ -11,9 +11,17 @@ import NewPassword from '../../components/NewPassword'
 import { useContext, useEffect, useState } from 'react'
 import NeedsPassword from '../../components/NeedsPassword'
 import ButtonsOnBottom from '../../components/ButtonsOnBottom'
-import { isBiometricUnlockSupported, registerBiometricUnlock } from '../../lib/biometricUnlock'
-import { getPrivateKey, isValidPassword, noUserDefinedPassword, setPrivateKey } from '../../lib/privateKey'
-import { hasMnemonic, getMnemonic, setMnemonic } from '../../lib/mnemonic'
+import { isBiometricUnlockSupported, registerBiometricUnlock, clearBiometricUnlock } from '../../lib/biometricUnlock'
+import {
+  getPrivateKey,
+  isValidPassword,
+  noUserDefinedPassword,
+  setPrivateKey,
+  setPrivateKeyRecovery,
+  removePrivateKeyRecovery,
+} from '../../lib/privateKey'
+import { hasMnemonic, getMnemonic, setMnemonic, setMnemonicRecovery, removeMnemonicRecovery } from '../../lib/mnemonic'
+import { canRecoverWithPassword, recoverSecretWithPassword } from '../../lib/recovery'
 import { useTranslation } from '../../providers/language'
 
 export default function Password() {
@@ -36,9 +44,14 @@ export default function Password() {
 
   useEffect(() => {
     if (!oldPassword) return
-    isValidPassword(oldPassword).then((isValid) => {
+    const checkPassword = async () => {
+      const isValid = (await isValidPassword(oldPassword)) || (await canRecoverWithPassword(oldPassword))
       setError(isValid ? '' : t('unlock.invalidPassword'))
       setAuthenticated(isValid)
+    }
+    checkPassword().catch(() => {
+      setError(t('unlock.invalidPassword'))
+      setAuthenticated(false)
     })
   }, [oldPassword])
 
@@ -48,11 +61,34 @@ export default function Password() {
     try {
       setSaving(true)
       if (await hasMnemonic()) {
-        const mnemonic = await getMnemonic(oldPassword)
+        let mnemonic: string
+        try {
+          mnemonic = await getMnemonic(oldPassword)
+        } catch {
+          // The primary blob is sealed with the biometric random password; the
+          // user's own password opens the recovery vault instead. Recovery
+          // re-seals the primary blob, so the read below just works.
+          await recoverSecretWithPassword(oldPassword)
+          mnemonic = await getMnemonic(oldPassword)
+        }
         await setMnemonic(mnemonic, finalPassword)
       } else {
-        const privateKey = await getPrivateKey(oldPassword)
+        let privateKey: Uint8Array
+        try {
+          privateKey = await getPrivateKey(oldPassword)
+        } catch {
+          await recoverSecretWithPassword(oldPassword)
+          privateKey = await getPrivateKey(oldPassword)
+        }
         await setPrivateKey(privateKey, finalPassword)
+      }
+      if (!biometrics) {
+        // Leaving biometric unlock (password change / removal): wipe the
+        // device secret and any recovery vault, which the typed password no
+        // longer needs. Kept untouched while enrolling, where it is the point.
+        await removeMnemonicRecovery()
+        await removePrivateKeyRecovery()
+        await clearBiometricUnlock()
       }
       setSuccessText(
         biometrics
@@ -71,13 +107,27 @@ export default function Password() {
     }
   }
 
-  const registerUserBiometrics = () => {
-    registerBiometricUnlock()
-      .then(({ password, passkeyId }) => {
-        updateWallet({ ...wallet, lockedByBiometrics: true, passkeyId })
-        saveNewPassword(password, true)
-      })
-      .catch(consoleLog)
+  const registerUserBiometrics = async () => {
+    try {
+      const { password, passkeyId } = await registerBiometricUnlock()
+      // Keep a recovery copy sealed with the user's own password before the
+      // device-random password replaces it as the encryptor. Never for the
+      // default password: it is public knowledge, so sealing a copy with it
+      // would hand the wallet to anyone who can read storage.
+      if (oldPassword !== defaultPassword) {
+        if (await hasMnemonic()) {
+          const mnemonic = await getMnemonic(oldPassword)
+          await setMnemonicRecovery(mnemonic, oldPassword)
+        } else {
+          const privateKey = await getPrivateKey(oldPassword)
+          await setPrivateKeyRecovery(privateKey, oldPassword)
+        }
+      }
+      updateWallet({ ...wallet, lockedByBiometrics: true, passkeyId })
+      await saveNewPassword(password, true)
+    } catch (err) {
+      consoleLog(err)
+    }
   }
 
   const handleContinue = async () => {

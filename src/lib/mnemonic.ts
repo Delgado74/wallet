@@ -1,7 +1,7 @@
 import { HDKey } from '@scure/bip32'
 import { mnemonicToSeedSync, validateMnemonic } from '@scure/bip39'
 import { wordlist } from '@scure/bip39/wordlists/english'
-import { MNEMONIC_STORAGE_KEY, NSEC_STORAGE_KEY } from './storageKeys'
+import { MNEMONIC_RECOVERY_STORAGE_KEY, MNEMONIC_STORAGE_KEY, NSEC_STORAGE_KEY } from './storageKeys'
 import { secretStore } from './secretStore'
 
 export const hasMnemonic = async (): Promise<boolean> => {
@@ -18,6 +18,31 @@ export const getMnemonic = async (password: string): Promise<string> => {
   const encrypted = await secretStore.getItem(MNEMONIC_STORAGE_KEY)
   if (!encrypted) throw new Error('No encrypted mnemonic found')
   return decryptMnemonic(encrypted, password)
+}
+
+/**
+ * Password recovery vault. Kept only for wallets with a user-chosen password
+ * (never `defaultPassword`): when biometric unlock re-seals the primary blob
+ * with a device-random password, this second copy sealed with the user's own
+ * password is what lets them back in if the device secret is lost.
+ */
+export const setMnemonicRecovery = async (mnemonic: string, password: string): Promise<void> => {
+  const encrypted = await encryptMnemonic(mnemonic, password)
+  await secretStore.setItem(MNEMONIC_RECOVERY_STORAGE_KEY, encrypted)
+}
+
+export const hasMnemonicRecovery = async (): Promise<boolean> => {
+  return (await secretStore.getItem(MNEMONIC_RECOVERY_STORAGE_KEY)) !== null
+}
+
+export const getMnemonicRecovery = async (password: string): Promise<string> => {
+  const encrypted = await secretStore.getItem(MNEMONIC_RECOVERY_STORAGE_KEY)
+  if (!encrypted) throw new Error('No encrypted mnemonic recovery found')
+  return decryptMnemonic(encrypted, password)
+}
+
+export const removeMnemonicRecovery = async (): Promise<void> => {
+  await secretStore.removeItem(MNEMONIC_RECOVERY_STORAGE_KEY)
 }
 
 /**

@@ -1,4 +1,9 @@
-import { MNEMONIC_STORAGE_KEY, NSEC_STORAGE_KEY } from './storageKeys'
+import {
+  MNEMONIC_RECOVERY_STORAGE_KEY,
+  MNEMONIC_STORAGE_KEY,
+  NSEC_RECOVERY_STORAGE_KEY,
+  NSEC_STORAGE_KEY,
+} from './storageKeys'
 
 export interface SecretStorageAdapter {
   getItem(key: string): Promise<string | null>
@@ -38,5 +43,10 @@ export const secretStore: SecretStorageAdapter = {
  * reset would otherwise leave the encrypted mnemonic behind on the device.
  */
 export const clearSecrets = async (): Promise<void> => {
-  await Promise.all([current.removeItem(MNEMONIC_STORAGE_KEY), current.removeItem(NSEC_STORAGE_KEY)])
+  await Promise.all([
+    current.removeItem(MNEMONIC_STORAGE_KEY),
+    current.removeItem(NSEC_STORAGE_KEY),
+    current.removeItem(MNEMONIC_RECOVERY_STORAGE_KEY),
+    current.removeItem(NSEC_RECOVERY_STORAGE_KEY),
+  ])
 }

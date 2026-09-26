@@ -23,20 +23,33 @@ export default function NeedsPassword({ error, onPassword }: NeedsPasswordProps)
   const { wallet } = useContext(WalletContext)
   const { t } = useTranslation()
   const [password, setPassword] = useState('')
+  const [usePassword, setUsePassword] = useState(false)
 
   const handleBiometrics = () => authenticateBiometricUnlock(wallet.passkeyId).then(onPassword).catch(consoleError)
   const handleChange = (ev: any) => setPassword(ev.target.value)
   const handleClick = () => onPassword(password)
+  // Biometric-locked wallets keep a password path: the recovery vault lets the
+  // user's own password back in if the device secret is ever lost or replaced.
+  const biometricOnly = wallet.lockedByBiometrics && !usePassword
 
   return (
     <>
       <Content>
         <Padded>
-          {wallet.lockedByBiometrics ? (
-            <CenterScreen onClick={handleBiometrics}>
-              <LockIcon big />
-              <Text centered>{t('unlock.unlockWithPasskey')}</Text>
-            </CenterScreen>
+          {biometricOnly ? (
+            <>
+              <CenterScreen onClick={handleBiometrics}>
+                <LockIcon big />
+                <Text centered>{t('unlock.unlockWithPasskey')}</Text>
+              </CenterScreen>
+              <button
+                type='button'
+                onClick={() => setUsePassword(true)}
+                className='w-full cursor-pointer text-center text-sm font-medium text-primary underline underline-offset-4 hover:opacity-80'
+              >
+                {t('unlock.enterPassword')}
+              </button>
+            </>
           ) : (
             <FlexCol gap='1rem' testId='password'>
               <InputPassword
@@ -52,7 +65,7 @@ export default function NeedsPassword({ error, onPassword }: NeedsPasswordProps)
         </Padded>
       </Content>
       <ButtonsOnBottom>
-        <Button onClick={wallet.lockedByBiometrics ? handleBiometrics : handleClick} label={t('unlock.unlockWallet')} />
+        <Button onClick={biometricOnly ? handleBiometrics : handleClick} label={t('unlock.unlockWallet')} />
       </ButtonsOnBottom>
     </>
   )

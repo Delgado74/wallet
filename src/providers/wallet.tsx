@@ -52,6 +52,7 @@ import { getAssetSwaps, swapActivityResolver } from '@arkade-os/swap'
 import { assetSwapRepository, type WalletAssetSwap } from '../lib/swapRepository'
 import { nsecToPrivateKey, getPrivateKey, noUserDefinedPassword } from '../lib/privateKey'
 import { hasMnemonic, getMnemonic, deriveNostrKeyFromMnemonic } from '../lib/mnemonic'
+import { recoverSecretWithPassword } from '../lib/recovery'
 import { clearSecrets } from '../lib/secretStore'
 import { clearBiometricUnlock } from '../lib/biometricUnlock'
 import { resolveWalletMode } from '../lib/walletMode'
@@ -935,13 +936,19 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   const unlockWallet = async (password: string) => {
     try {
+      const recovered = await recoverSecretWithPassword(password)
+      setAuthState('authenticated')
+      if (recovered) {
+        // Recovering with the user's own password re-sealed the wallet back to
+        // password-only unlock: drop the orphaned device secret and flags.
+        await clearBiometricUnlock()
+        updateWallet({ ...wallet, lockedByBiometrics: false, passkeyId: undefined })
+      }
       if (await hasMnemonic()) {
         const mnemonic = await getMnemonic(password)
-        setAuthState('authenticated')
         await initWallet({ mnemonic })
       } else {
         const privateKey = await getPrivateKey(password)
-        setAuthState('authenticated')
         await initWallet({ privateKey })
       }
     } catch (err) {
