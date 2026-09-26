@@ -52,6 +52,8 @@ import { getAssetSwaps, swapActivityResolver } from '@arkade-os/swap'
 import { assetSwapRepository, type WalletAssetSwap } from '../lib/swapRepository'
 import { nsecToPrivateKey, getPrivateKey, noUserDefinedPassword } from '../lib/privateKey'
 import { hasMnemonic, getMnemonic, deriveNostrKeyFromMnemonic } from '../lib/mnemonic'
+import { clearSecrets } from '../lib/secretStore'
+import { clearBiometricUnlock } from '../lib/biometricUnlock'
 import { resolveWalletMode } from '../lib/walletMode'
 import { calcBatchLifetimeMs, calcNextRollover } from '../lib/wallet'
 import { setLoadingStatus } from '../lib/loadingStatus'
@@ -1029,6 +1031,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     removeServiceWorkerMessageHandler()
     if (!svcWallet) throw new Error('Service worker not initialized')
     await clearStorage()
+    await clearSecrets()
+    await clearBiometricUnlock()
     // swap records outlive localStorage now: without this a reset leaves the
     // previous wallet's swaps in the activity list. Never fatal — a reset that
     // aborted here would leave the wallet itself half-cleared, which is worse
