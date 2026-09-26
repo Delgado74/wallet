@@ -70,15 +70,22 @@ Addresses the production concerns raised in the design review of phase C:
   coexist: using either one never re-seals or revokes the other, and losing
   one key leaves the other fully functional. The unlock screen shows both
   paths simultaneously.
+- **Enrollment requires a password first.** Biometrics are a second lock on
+  top of the seed, never a replacement for the password. Enabling them now
+  demands a user-chosen password (the vault sealer) in both flows — creation
+  (`Init/Password.tsx`, the continue button stays disabled until a password is
+  set) and settings (`Settings/Password.tsx`, which errors with
+  `settings.biometricsPasswordRequired` for a wallet that has only the public
+  default password). This mirrors what other wallet APKs do and closes the
+  lockout hole where a wallet ended up reachable by a single key with no
+  fallback.
 - **Enrollment is additive at creation, not exclusive.** Wallet creation used
   to offer *either* a password *or* a passkey, and choosing the passkey left
   the wallet sealed by the device secret alone — the reported failure mode was
   "fingerprint fails, password cannot open it, only option is uninstall and
   re-enter the seed". The password form now stays on screen while biometrics
   are enabled, `initInfo.recoveryPassword` carries the chosen password to
-  `Init/Connect.tsx`, and the vault is written at creation. Skipping the
-  password is still allowed (explicitly labelled), and keeps biometrics as the
-  only way in.
+  `Init/Connect.tsx`, and the vault is written at creation.
 - **Strong biometry only.** `allowDeviceCredential` is now `false` and Android
   biometry is pinned to `strong`, so a PIN/pattern shared credential and
   spoofable weak biometry cannot gate a decrypting secret. Devices without

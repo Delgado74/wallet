@@ -89,6 +89,20 @@ describe('password unlock coexisting with biometrics', () => {
     await expect(getSecretForUnlock(userPassword)).resolves.toBeNull()
   })
 
+  it('enrollment leaves both the device secret and the user password working', async () => {
+    // Enrolling biometrics reseals the primary blob with the device-random
+    // secret and keeps a vault copy under the user's own password. Both keys
+    // must open the wallet, in either order, repeatedly.
+    await setMnemonic(testMnemonic, userPassword)
+    await setMnemonicRecovery(testMnemonic, userPassword)
+    await setMnemonic(testMnemonic, devicePassword)
+
+    await expect(getSecretForUnlock(devicePassword)).resolves.toEqual({ kind: 'mnemonic', value: testMnemonic })
+    await expect(getSecretForUnlock(userPassword)).resolves.toEqual({ kind: 'mnemonic', value: testMnemonic })
+    await expect(getSecretForUnlock(devicePassword)).resolves.toEqual({ kind: 'mnemonic', value: testMnemonic })
+    expect(await hasMnemonicRecovery()).toBe(true)
+  })
+
   it('vault round-trips and removes independently', async () => {
     await setMnemonicRecovery(testMnemonic, userPassword)
     expect(await hasMnemonicRecovery()).toBe(true)

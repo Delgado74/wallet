@@ -30,20 +30,16 @@ export default function InitPassword() {
 
   // Biometrics are additive, not a replacement for the password: enrollment
   // seals the primary blob with a device-random secret, and the password the
-  // user chose here seals the recovery vault, so both paths stay usable.
-  // Enrolling without a password leaves biometrics as the only way in.
+  // user chose here seals the recovery vault, so both paths stay usable. The
+  // password is therefore required — biometrics on their own would leave the
+  // wallet reachable by exactly one key, with no fallback if it is lost.
   const continueWithBiometrics = async () => {
-    const chosenPassword = password ? password : defaultPassword
+    if (!password) return
     setEnrolling(true)
     try {
       const { password: devicePassword, passkeyId } = await registerBiometricUnlock()
       updateWallet({ ...wallet, lockedByBiometrics: true, passkeyId })
-      setInitInfo({
-        ...initInfo,
-        password: devicePassword,
-        recoveryPassword: chosenPassword === defaultPassword ? undefined : chosenPassword,
-        restoring: false,
-      })
+      setInitInfo({ ...initInfo, password: devicePassword, recoveryPassword: password, restoring: false })
       navigate(Pages.InitConnect)
     } catch (err) {
       consoleLog(err)
@@ -87,8 +83,8 @@ export default function InitPassword() {
             </OnboardStaggerChild>
             {biometrics ? (
               <OnboardStaggerChild>
-                <Text color='neutral-500' small wrap>
-                  {t('init.biometricsPasswordHint')}
+                <Text color={password ? 'neutral-500' : 'danger'} small wrap>
+                  {t('init.biometricsPasswordRequired')}
                 </Text>
               </OnboardStaggerChild>
             ) : null}
@@ -96,7 +92,12 @@ export default function InitPassword() {
         </Padded>
       </Content>
       <ButtonsOnBottom>
-        <Button onClick={handleContinue} label={label} loading={enrolling} disabled={enrolling} />
+        <Button
+          onClick={handleContinue}
+          label={label}
+          loading={enrolling}
+          disabled={enrolling || (biometrics && !password)}
+        />
         {biometrics ? (
           <Button onClick={() => setBiometrics(false)} label={t('init.usePassword')} secondary />
         ) : isBiometricUnlockSupported() ? (
