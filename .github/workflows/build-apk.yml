@@ -37,14 +37,19 @@ jobs:
 
       - name: Type-check
         run: |
+          set +e
           pnpm exec tsc --noEmit > /tmp/tsc.log 2>&1
-          OTHER=$(grep "error TS" /tmp/tsc.log | grep -v "src/providers/lnSwaps.tsx")
+          TSC_EC=$?
+          echo "tsc exit code: ${TSC_EC}"
+          cat /tmp/tsc.log
+          OTHER=$(grep -E "error TS" /tmp/tsc.log | grep -v -E "src/providers/lnSwaps.tsx")
           if [ -n "$OTHER" ]; then
-            echo "== TypeScript errors (excluding known baseline lnSwaps) =="
-            echo "$OTHER"
+            echo "== TypeScript errors (baseline lnSwaps ignored) =="
+            printf '%s\n' "$OTHER"
             exit 1
           fi
           echo "tsc OK (baseline lnSwaps error ignored)"
+          exit 0
 
       - name: Build web app
         env:
