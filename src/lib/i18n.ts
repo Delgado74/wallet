@@ -85,6 +85,8 @@ export const translations = {
       createPasskey: 'Create passkey',
       biometricsDescription:
         'This will allow you to log in easily through biometrics without a need to remember the password.',
+      biometricsPasswordHint:
+        'Biometrics and your password both stay usable. Set a password, or losing biometric access means restoring your seed.',
       invalidRecoveryPhrase: 'Invalid recovery phrase',
       unableToValidatePrivateKey: 'Unable to validate private key format',
       unableToValidateKey: 'Unable to validate key format',
@@ -846,6 +848,8 @@ export const translations = {
       createPasskey: 'Crear passkey',
       biometricsDescription:
         'Esto te permitirá iniciar sesión fácilmente con datos biométricos sin necesidad de recordar la contraseña.',
+      biometricsPasswordHint:
+        'Los datos biométricos y tu contraseña siguen funcionando. Define una contraseña, o perder el acceso biométrico implica restaurar tu seed.',
       invalidRecoveryPhrase: 'Frase de recuperación inválida',
       unableToValidatePrivateKey: 'No se pudo validar el formato de la clave privada',
       unableToValidateKey: 'No se pudo validar el formato de la clave',

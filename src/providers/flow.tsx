@@ -6,6 +6,9 @@ import type { FiatAccountSend } from '../lib/accountAssets'
 
 export interface InitInfo {
   password?: string
+  /** Second key: the password the user chose, sealing the recovery vault while
+   * biometric unlock owns the primary blob. Unset means no password fallback. */
+  recoveryPassword?: string
   privateKey?: Uint8Array
   mnemonic?: string
   restoring?: boolean
@@ -95,6 +98,7 @@ interface FlowContextProps {
 
 export const emptyInitInfo: InitInfo = {
   password: undefined,
+  recoveryPassword: undefined,
   privateKey: undefined,
 }
 

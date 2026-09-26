@@ -64,12 +64,21 @@ Addresses the production concerns raised in the design review of phase C:
 
 - **Password recovery vault, coexisting with biometrics.** A biometric-locked
   wallet whose device secret is lost is otherwise irrecoverable without the
-  seed phrase. A second copy of the mnemonic/nsec, sealed with the user's _own_
+  seed phrase. A second copy of the mnemonic/nsec, sealed with the user's *own*
   password, is kept when biometrics are enrolled on a wallet that has a real
   password (never the default one). The password and the biometric unlock
   coexist: using either one never re-seals or revokes the other, and losing
   one key leaves the other fully functional. The unlock screen shows both
   paths simultaneously.
+- **Enrollment is additive at creation, not exclusive.** Wallet creation used
+  to offer *either* a password *or* a passkey, and choosing the passkey left
+  the wallet sealed by the device secret alone — the reported failure mode was
+  "fingerprint fails, password cannot open it, only option is uninstall and
+  re-enter the seed". The password form now stays on screen while biometrics
+  are enabled, `initInfo.recoveryPassword` carries the chosen password to
+  `Init/Connect.tsx`, and the vault is written at creation. Skipping the
+  password is still allowed (explicitly labelled), and keeps biometrics as the
+  only way in.
 - **Strong biometry only.** `allowDeviceCredential` is now `false` and Android
   biometry is pinned to `strong`, so a PIN/pattern shared credential and
   spoofable weak biometry cannot gate a decrypting secret. Devices without
