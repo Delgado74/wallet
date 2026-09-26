@@ -38,7 +38,11 @@ export default function Backup() {
   const { toast } = useToast()
   const { t } = useTranslation()
 
-  const isMnemonicWallet = hasMnemonic()
+  const [isMnemonicWallet, setIsMnemonicWallet] = useState(true)
+
+  useEffect(() => {
+    hasMnemonic().then(setIsMnemonicWallet)
+  }, [])
 
   const [secret, setSecret] = useState('')
   const [error, setError] = useState('')

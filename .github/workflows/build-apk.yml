@@ -60,7 +60,7 @@ jobs:
       - name: Initialize Capacitor
         run: npx cap add android
 
-      - name: Apply CanoArk branding (icons + splash)
+      - name: Apply Arkade branding (icons + splash)
         run: node scripts/prepare-branding.mjs
 
       - name: Sync Capacitor
@@ -94,6 +94,6 @@ jobs:
         if: steps.find-apk.outputs.apk_path != ''
         uses: actions/upload-artifact@v4
         with:
-          name: canoark-wallet-apk
+          name: arkade-wallet-apk
           path: ${{ steps.find-apk.outputs.apk_path }}
           retention-days: 30

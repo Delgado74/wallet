@@ -1,4 +1,5 @@
 import ReactDOM from 'react-dom/client'
+import './runtime/secretStorage'
 import './tokens.css'
 import './app.css'
 import './index.css'

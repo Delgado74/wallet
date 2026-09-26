@@ -4,6 +4,7 @@
   "private": true,
   "homepage": ".",
   "dependencies": {
+    "@aparajita/capacitor-secure-storage": "^8.0.0",
     "@arkade-os/sdk": "0.4.76",
     "@arkade-os/solver-discovery": "0.2.5",
     "@arkade-os/swap": "0.0.22",

@@ -426,7 +426,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setAuthState('unknown')
 
     const detectPasswordState = async () => {
-      if (hasMnemonic()) {
+      if (await hasMnemonic()) {
         try {
           await getMnemonic(defaultPassword)
           return true // passwordless
@@ -933,7 +933,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   const unlockWallet = async (password: string) => {
     try {
-      if (hasMnemonic()) {
+      if (await hasMnemonic()) {
         const mnemonic = await getMnemonic(password)
         setAuthState('authenticated')
         await initWallet({ mnemonic })
