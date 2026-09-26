@@ -32,11 +32,19 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
+
+      - name: Type-check
+        run: |
+          pnpm exec tsc --noEmit > /tmp/tsc.log 2>&1
+          OTHER=$(grep "error TS" /tmp/tsc.log | grep -v "src/providers/lnSwaps.tsx")
+          if [ -n "$OTHER" ]; then
+            echo "== TypeScript errors (excluding known baseline lnSwaps) =="
+            echo "$OTHER"
+            exit 1
+          fi
+          echo "tsc OK (baseline lnSwaps error ignored)"
 
       - name: Build web app
         env:
