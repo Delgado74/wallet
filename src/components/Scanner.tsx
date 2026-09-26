@@ -11,7 +11,6 @@ import { extractError } from '../lib/error'
 import { cameraErrorText, queryCameraPermission } from '../lib/camera'
 import QrScanner from 'qr-scanner'
 import { Capacitor } from '@capacitor/core'
-import { BarcodeFormat, BarcodeScanner } from '@capacitor-mlkit/barcode-scanning'
 import { useTranslation } from '../providers/language'
 
 const videoStyle: React.CSSProperties = {
@@ -85,58 +84,33 @@ function ScannerNative({
   useEffect(() => {
     let cancelled = false
 
-    const stop = async () => {
-      try {
-        await BarcodeScanner.stopScan()
-      } catch {
-        /* ignore */
-      }
-      try {
-        await BarcodeScanner.removeAllListeners()
-      } catch {
-        /* ignore */
-      }
-    }
-
     const start = async () => {
       setBusy(true)
       setError('')
       try {
-        const { supported } = await BarcodeScanner.isSupported()
+        // Official Capacitor barcode plugin (same API consumed by upstream
+        // capacitor-exploration). Imported lazily so the PWA bundle does not
+        // load the native module.
+        const { CapacitorBarcodeScanner, CapacitorBarcodeScannerTypeHint } = await import('@capacitor/barcode-scanner')
         if (cancelled) return
-        if (!supported) {
-          setError(t('scanner.unsupported'))
-          setBusy(false)
-          return
-        }
-
-        const perm = await BarcodeScanner.requestPermissions()
-        if (cancelled) return
-        if (perm.camera === 'denied' || perm.camera === 'prompt') {
-          setError(t('scanner.permissionDenied'))
-          setBusy(false)
-          return
-        }
-
-        await BarcodeScanner.addListener('barcodeScanned', (result) => {
-          if (cancelled) return
-          const raw = result.barcode?.rawValue
-          if (raw) {
-            cancelled = true
-            stop()
-            onData(raw)
-            onClose()
-          }
+        const result = await CapacitorBarcodeScanner.scanBarcode({
+          hint: CapacitorBarcodeScannerTypeHint.QR_CODE,
         })
-
-        await BarcodeScanner.startScan({ formats: [BarcodeFormat.QrCode] })
-        if (!cancelled) setBusy(false)
+        if (cancelled) return
+        const raw = result.ScanResult
+        if (raw) {
+          cancelled = true
+          onData(raw)
+          onClose()
+        } else if (!cancelled) {
+          cancelled = true
+          onClose()
+        }
       } catch (err) {
         if (cancelled) return
         const msg = (err as Error)?.message || ''
         if (msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('user')) {
           cancelled = true
-          stop()
           onClose()
         } else {
           setError(t('scanner.cameraError'))
@@ -154,7 +128,6 @@ function ScannerNative({
       cancelled = true
       document.body.classList.remove('scanner-active')
       document.documentElement.classList.remove('scanner-active')
-      stop()
     }
   }, [attempt])
 

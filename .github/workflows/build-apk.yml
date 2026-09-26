@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - feature/capacitor-apk
+      - feat/capacitor-v8-secure
 
 jobs:
   build:
@@ -33,11 +34,9 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-        with:
-          packages: platform-tools build-tools;34.0.0 platforms;android-34
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --no-frozen-lockfile
 
       - name: Build web app
         env:
@@ -47,7 +46,7 @@ jobs:
       - name: Initialize Capacitor
         run: npx cap add android
 
-      - name: Apply Arkade branding (icons + splash)
+      - name: Apply CanoArk branding (icons + splash)
         run: node scripts/prepare-branding.mjs
 
       - name: Sync Capacitor
@@ -81,6 +80,6 @@ jobs:
         if: steps.find-apk.outputs.apk_path != ''
         uses: actions/upload-artifact@v4
         with:
-          name: arkade-wallet-apk
+          name: canoark-wallet-apk
           path: ${{ steps.find-apk.outputs.apk_path }}
           retention-days: 30
