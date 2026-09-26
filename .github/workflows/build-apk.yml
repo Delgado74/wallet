@@ -2,6 +2,10 @@ name: Build Android APK
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feature/capacitor-apk
+      - feat/capacitor-v8-secure
 
 jobs:
   build:
@@ -32,7 +36,7 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --no-frozen-lockfile
 
       - name: Build web app
         env:
@@ -42,11 +46,17 @@ jobs:
       - name: Initialize Capacitor
         run: npx cap add android
 
+      - name: Apply CanoArk branding (icons + splash)
+        run: node scripts/prepare-branding.mjs
+
       - name: Sync Capacitor
         run: npx cap sync android
 
       - name: Prepare Android manifest (camera + ML Kit)
         run: node scripts/prepare-android.mjs
+
+      - name: Prepare service worker routing in MainActivity
+        run: node scripts/prepare-service-worker.mjs
 
       - name: Verify camera permissions in manifest
         run: |
@@ -70,6 +80,6 @@ jobs:
         if: steps.find-apk.outputs.apk_path != ''
         uses: actions/upload-artifact@v4
         with:
-          name: arkade-wallet-apk
+          name: canoark-wallet-apk
           path: ${{ steps.find-apk.outputs.apk_path }}
           retention-days: 30
