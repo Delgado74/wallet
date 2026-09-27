@@ -1,6 +1,6 @@
 import { getPublicKey, nip19 } from 'nostr-tools'
 import { defaultPassword } from './constants'
-import { NSEC_RECOVERY_STORAGE_KEY, MNEMONIC_STORAGE_KEY, NSEC_STORAGE_KEY } from './storageKeys'
+import { MNEMONIC_STORAGE_KEY, NSEC_STORAGE_KEY } from './storageKeys'
 import { secretStore } from './secretStore'
 
 export const invalidPrivateKey = (key: Uint8Array): string => {
@@ -70,30 +70,6 @@ export const isValidPassword = async (password: string): Promise<boolean> => {
 
 export const noUserDefinedPassword = async (): Promise<boolean> => {
   return await isValidPassword(defaultPassword)
-}
-
-/**
- * Password recovery vault, mirroring `setMnemonicRecovery`: a second copy
- * sealed with the user's own password, kept only for wallets that never used
- * the default password, so biometric-unlock re-sealing cannot orphan a key.
- */
-export const setPrivateKeyRecovery = async (privateKey: Uint8Array, password: string): Promise<void> => {
-  const encrypted = await encryptPrivateKey(privateKey, password)
-  await secretStore.setItem(NSEC_RECOVERY_STORAGE_KEY, encrypted)
-}
-
-export const hasPrivateKeyRecovery = async (): Promise<boolean> => {
-  return (await secretStore.getItem(NSEC_RECOVERY_STORAGE_KEY)) !== null
-}
-
-export const getPrivateKeyRecovery = async (password: string): Promise<Uint8Array> => {
-  const encrypted = await secretStore.getItem(NSEC_RECOVERY_STORAGE_KEY)
-  if (!encrypted) throw new Error('No encrypted private key recovery found')
-  return decryptPrivateKey(encrypted, password)
-}
-
-export const removePrivateKeyRecovery = async (): Promise<void> => {
-  await secretStore.removeItem(NSEC_RECOVERY_STORAGE_KEY)
 }
 
 const storeEncryptedPrivateKey = async (encryptedPrivateKey: string): Promise<void> => {

@@ -4,8 +4,8 @@ import Content from '../../components/Content'
 import { WalletContext } from '../../providers/wallet'
 import LoadingLogo from '../../components/LoadingLogo'
 import Header from '../../components/Header'
-import { setPrivateKey, setPrivateKeyRecovery } from '../../lib/privateKey'
-import { setMnemonic, setMnemonicRecovery } from '../../lib/mnemonic'
+import { setPrivateKey } from '../../lib/privateKey'
+import { setMnemonic } from '../../lib/mnemonic'
 import { consoleError } from '../../lib/logs'
 import { useLoadingStatus } from '../../hooks/useLoadingStatus'
 import { setLoadingStatus } from '../../lib/loadingStatus'
@@ -24,7 +24,7 @@ export default function InitConnect() {
   const [initialized, setInitialized] = useState(false)
   const [connectDone, setConnectDone] = useState(false)
 
-  const { password, recoveryPassword, privateKey, mnemonic, walletMode } = initInfo
+  const { password, privateKey, mnemonic, walletMode } = initInfo
 
   useEffect(() => {
     if (!password || (!mnemonic && !privateKey)) {
@@ -33,16 +33,11 @@ export default function InitConnect() {
     }
     if (mnemonic) {
       setMnemonic(mnemonic, password)
-        // Biometric enrollment seals the primary blob with the device secret;
-        // this second copy under the user's own password is what keeps the
-        // wallet reachable when biometric access is lost.
-        .then(() => (recoveryPassword ? setMnemonicRecovery(mnemonic, recoveryPassword) : undefined))
         .then(() => initWallet({ mnemonic, walletMode, restoring: initInfo.restoring }))
         .then(() => setInitialized(true))
         .catch(abortConnectionWithError)
     } else if (privateKey) {
       setPrivateKey(privateKey, password)
-        .then(() => (recoveryPassword ? setPrivateKeyRecovery(privateKey, recoveryPassword) : undefined))
         .then(() => initWallet({ privateKey }))
         .then(() => setInitialized(true))
         .catch(abortConnectionWithError)
@@ -54,14 +49,7 @@ export default function InitConnect() {
   }, [initialized])
 
   const handleExitComplete = () => {
-    setInitInfo({
-      ...initInfo,
-      password: undefined,
-      recoveryPassword: undefined,
-      privateKey: undefined,
-      mnemonic: undefined,
-      walletMode: undefined,
-    })
+    setInitInfo({ ...initInfo, password: undefined, privateKey: undefined, mnemonic: undefined, walletMode: undefined })
     navigate(error ? Pages.Init : Pages.Wallet)
   }
 

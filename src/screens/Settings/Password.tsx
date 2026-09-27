@@ -11,16 +11,9 @@ import NewPassword from '../../components/NewPassword'
 import { useContext, useEffect, useState } from 'react'
 import NeedsPassword from '../../components/NeedsPassword'
 import ButtonsOnBottom from '../../components/ButtonsOnBottom'
-import { isBiometricUnlockSupported, registerBiometricUnlock, clearBiometricUnlock } from '../../lib/biometricUnlock'
-import {
-  isValidPassword,
-  noUserDefinedPassword,
-  setPrivateKey,
-  setPrivateKeyRecovery,
-  removePrivateKeyRecovery,
-} from '../../lib/privateKey'
-import { setMnemonic, setMnemonicRecovery, removeMnemonicRecovery } from '../../lib/mnemonic'
-import { getSecretForUnlock } from '../../lib/recovery'
+import { clearBiometricUnlock, isBiometricUnlockSupported, registerBiometricUnlock } from '../../lib/biometricUnlock'
+import { getPrivateKey, isValidPassword, noUserDefinedPassword, setPrivateKey } from '../../lib/privateKey'
+import { hasMnemonic, getMnemonic, setMnemonic } from '../../lib/mnemonic'
 import { useTranslation } from '../../providers/language'
 
 export default function Password() {
@@ -40,54 +33,34 @@ export default function Password() {
       if (noPassword) setOldPassword(defaultPassword)
     })
   }, [])
+
   useEffect(() => {
     if (!oldPassword) return
-    const checkPassword = async () => {
-      let isValid = await isValidPassword(oldPassword)
-      if (!isValid) {
-        try {
-          isValid = (await getSecretForUnlock(oldPassword)) !== null
-        } catch {
-          isValid = false
-        }
-      }
+    isValidPassword(oldPassword).then((isValid) => {
       setError(isValid ? '' : t('unlock.invalidPassword'))
       setAuthenticated(isValid)
-    }
-    checkPassword().catch(() => {
-      setError(t('unlock.invalidPassword'))
-      setAuthenticated(false)
     })
   }, [oldPassword])
 
-  const saveNewPassword = async (nextPassword: string | null): Promise<boolean> => {
+  const saveNewPassword = async (nextPassword: string | null, biometrics: boolean): Promise<boolean> => {
     if (!oldPassword || nextPassword === null || !authenticated) return false
     const finalPassword = nextPassword === '' ? defaultPassword : nextPassword
-    const removingPassword = finalPassword === defaultPassword
-    // Changing the password while biometrics stay enrolled must not touch the
-    // device-sealed primary blob: reseal only the vault (the second key), so
-    // both unlock methods keep working.
-    const keepBiometricsEnrolled = wallet.lockedByBiometrics && !removingPassword
     try {
       setSaving(true)
-      const secret = await getSecretForUnlock(oldPassword)
-      if (!secret) throw new Error('Invalid password')
-      if (keepBiometricsEnrolled) {
-        if (secret.kind === 'mnemonic') await setMnemonicRecovery(secret.value, finalPassword)
-        else await setPrivateKeyRecovery(secret.value, finalPassword)
-      } else if (secret.kind === 'mnemonic') {
-        await setMnemonic(secret.value, finalPassword)
+      if (await hasMnemonic()) {
+        const mnemonic = await getMnemonic(oldPassword)
+        await setMnemonic(mnemonic, finalPassword)
       } else {
-        await setPrivateKey(secret.value, finalPassword)
+        const privateKey = await getPrivateKey(oldPassword)
+        await setPrivateKey(privateKey, finalPassword)
       }
-      if (removingPassword) {
-        // Removing the password entirely also drops biometric unlock and any
-        // remaining recovery copies in the vault.
-        await removeMnemonicRecovery()
-        await removePrivateKeyRecovery()
-        await clearBiometricUnlock()
-      }
-      setSuccessText(removingPassword ? t('settings.passwordRemoved') : t('settings.passwordChanged'))
+      setSuccessText(
+        biometrics
+          ? t('settings.passwordChangedToBiometrics')
+          : finalPassword === defaultPassword
+            ? t('settings.passwordRemoved')
+            : t('settings.passwordChanged'),
+      )
       setError('')
       return true
     } catch {
@@ -98,52 +71,24 @@ export default function Password() {
     }
   }
 
-  /**
-   * Enrolls biometric unlock as a second lock on top of the seed, never as a
-   * replacement for the password: the primary blob is resealed with the
-   * device-random secret, and a vault copy is sealed with a real user password
-   * whenever one exists, so a failed or lost fingerprint still leaves a way in.
-   *
-   * A wallet with no user-defined password (the public default) has nothing
-   * worth sealing the vault with, so biometrics end up as the only key and the
-   * seed becomes the recovery path. The device secret and the public default
-   * are never used as the vault sealer.
-   */
-  const registerUserBiometrics = async () => {
-    const vaultPassword = oldPassword === defaultPassword ? newPassword : oldPassword
-    try {
-      setSaving(true)
-      const { password: devicePassword, passkeyId } = await registerBiometricUnlock()
-      const secret = await getSecretForUnlock(oldPassword)
-      if (!secret) throw new Error('Invalid password')
-      if (secret.kind === 'mnemonic') {
-        await setMnemonic(secret.value, devicePassword)
-        if (vaultPassword) await setMnemonicRecovery(secret.value, vaultPassword)
-      } else {
-        await setPrivateKey(secret.value, devicePassword)
-        if (vaultPassword) await setPrivateKeyRecovery(secret.value, vaultPassword)
-      }
-      updateWallet({ ...wallet, lockedByBiometrics: true, passkeyId })
-      setSuccessText(t('settings.passwordChangedToBiometrics'))
-      setError('')
-    } catch (err) {
-      consoleLog(err)
-      setError(t('settings.failedToUpdatePassword'))
-    } finally {
-      setSaving(false)
-    }
+  const registerUserBiometrics = () => {
+    registerBiometricUnlock()
+      .then(({ password, passkeyId }) => {
+        updateWallet({ ...wallet, lockedByBiometrics: true, passkeyId })
+        saveNewPassword(password, true)
+      })
+      .catch(consoleLog)
   }
 
   const handleContinue = async () => {
-    const ok = await saveNewPassword(newPassword)
+    const ok = await saveNewPassword(newPassword, false)
     if (!ok) return
-    // Only when the wallet is password-only, or the password is being removed
-    // entirely, are the biometric flags dropped. A password change while
-    // biometrics are enrolled leaves them enabled and untouched.
-    const removingPassword = newPassword === ''
-    if (!wallet.lockedByBiometrics || removingPassword) {
-      updateWallet({ ...wallet, lockedByBiometrics: false })
-    }
+    // Password and biometric unlock are exclusive, so the device secret is now
+    // dead key material: the blob was just re-sealed with the password. Drop it
+    // instead of leaving a second copy of the wallet's encryption key in
+    // secure storage, where nothing would ever use or clear it again.
+    if (wallet.lockedByBiometrics) await clearBiometricUnlock()
+    updateWallet({ ...wallet, lockedByBiometrics: false })
   }
 
   if (!authenticated && !successText) return <NeedsPassword error={error} onPassword={setOldPassword} />

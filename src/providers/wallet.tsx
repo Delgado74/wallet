@@ -50,9 +50,8 @@ import { lnSendViews, swapActivityInputs, type LnSendView } from '../lib/lnSendR
 import { assetSwapResolver } from '../lib/activity/assetSwapResolver'
 import { getAssetSwaps, swapActivityResolver } from '@arkade-os/swap'
 import { assetSwapRepository, type WalletAssetSwap } from '../lib/swapRepository'
-import { nsecToPrivateKey, noUserDefinedPassword } from '../lib/privateKey'
+import { nsecToPrivateKey, getPrivateKey, noUserDefinedPassword } from '../lib/privateKey'
 import { hasMnemonic, getMnemonic, deriveNostrKeyFromMnemonic } from '../lib/mnemonic'
-import { getSecretForUnlock } from '../lib/recovery'
 import { clearSecrets } from '../lib/secretStore'
 import { clearBiometricUnlock } from '../lib/biometricUnlock'
 import { resolveWalletMode } from '../lib/walletMode'
@@ -936,13 +935,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   const unlockWallet = async (password: string) => {
     try {
-      const secret = await getSecretForUnlock(password)
-      if (!secret) throw new Error('Invalid password')
-      setAuthState('authenticated')
-      if (secret.kind === 'mnemonic') {
-        await initWallet({ mnemonic: secret.value })
+      if (await hasMnemonic()) {
+        const mnemonic = await getMnemonic(password)
+        setAuthState('authenticated')
+        await initWallet({ mnemonic })
       } else {
-        await initWallet({ privateKey: secret.value })
+        const privateKey = await getPrivateKey(password)
+        setAuthState('authenticated')
+        await initWallet({ privateKey })
       }
     } catch (err) {
       setAuthState('locked')

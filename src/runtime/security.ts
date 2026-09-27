@@ -18,10 +18,9 @@ import type { SecurityRuntimeAdapter } from './types'
  *
  * Prompt hardening: `allowDeviceCredential` is false and Android biometry is
  * pinned to strong — the PIN/pattern fallback widens the unlock surface to a
- * shared, low-entropy credential a wallet has no reason to trust, and the
- * wallet's own password recovery vault covers the lockout a no-fallback prompt
- * would otherwise create. Devices without strong biometry simply never offer
- * the button (unlock stays on the wallet password).
+ * shared, low-entropy credential a wallet has no reason to trust. Devices
+ * without strong biometry simply never offer the button, and a biometric wallet
+ * that can no longer be opened this way is recovered from its seed.
  */
 
 let biometricModule: Promise<typeof import('@aparajita/capacitor-biometric-auth')> | undefined

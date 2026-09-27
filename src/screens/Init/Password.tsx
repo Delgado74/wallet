@@ -17,6 +17,11 @@ import LockIcon from '../../icons/Lock'
 import { OnboardStaggerContainer, OnboardStaggerChild } from '../../components/OnboardLoadIn'
 import { useTranslation } from '../../providers/language'
 
+enum Method {
+  Password = 'password',
+  Biometrics = 'biometrics',
+}
+
 export default function InitPassword() {
   const { navigate } = useContext(NavigationContext)
   const { initInfo, setInitInfo } = useContext(FlowContext)
@@ -24,35 +29,22 @@ export default function InitPassword() {
   const { t } = useTranslation()
 
   const [label, setLabel] = useState('')
-  const [biometrics, setBiometrics] = useState(false)
-  const [enrolling, setEnrolling] = useState(false)
+  const [method, setMethod] = useState<Method>(Method.Password)
   const [password, setPassword] = useState<string | null>(null)
 
-  // Password and biometrics are two independent locks, activated in their own
-  // screen and never revoking each other. Enrollment seals the primary blob
-  // with a device-random secret; a password already set here additionally seals
-  // the vault, so it becomes the fallback if the fingerprint fails. Choosing
-  // biometrics without one is allowed — the seed is then the only way back in.
-  const continueWithBiometrics = async () => {
-    setEnrolling(true)
-    try {
-      const { password: devicePassword, passkeyId } = await registerBiometricUnlock()
-      updateWallet({ ...wallet, lockedByBiometrics: true, passkeyId })
-      setInitInfo({
-        ...initInfo,
-        password: devicePassword,
-        recoveryPassword: password ?? undefined,
-        restoring: false,
+  const registerUserBiometrics = () => {
+    registerBiometricUnlock()
+      .then(({ password, passkeyId }) => {
+        updateWallet({ ...wallet, lockedByBiometrics: true, passkeyId })
+        setInitInfo({ ...initInfo, password, restoring: false })
+        navigate(Pages.InitConnect)
       })
-      navigate(Pages.InitConnect)
-    } catch (err) {
-      consoleLog(err)
-      setEnrolling(false)
-    }
+      .catch(consoleLog)
   }
 
   const handleContinue = () => {
-    setInitInfo({ ...initInfo, password: password ? password : defaultPassword, restoring: false })
+    const pass = password ? password : defaultPassword
+    setInitInfo({ ...initInfo, password: pass, restoring: false })
     navigate(Pages.InitConnect)
   }
 
@@ -61,8 +53,8 @@ export default function InitPassword() {
       <Header text={t('init.createNewWallet')} back />
       <Content>
         <Padded>
-          {biometrics ? (
-            <CenterScreen onClick={continueWithBiometrics}>
+          {method === Method.Biometrics ? (
+            <CenterScreen onClick={registerUserBiometrics}>
               <OnboardStaggerContainer centered>
                 <OnboardStaggerChild>
                   <LockIcon big />
@@ -77,13 +69,6 @@ export default function InitPassword() {
                     {t('init.biometricsDescription')}
                   </Text>
                 </OnboardStaggerChild>
-                {!password ? (
-                  <OnboardStaggerChild>
-                    <Text centered color='neutral-500' small wrap>
-                      {t('init.biometricsPasswordFallback')}
-                    </Text>
-                  </OnboardStaggerChild>
-                ) : null}
               </OnboardStaggerContainer>
             </CenterScreen>
           ) : (
@@ -96,16 +81,16 @@ export default function InitPassword() {
         </Padded>
       </Content>
       <ButtonsOnBottom>
-        {biometrics ? (
-          <Button onClick={continueWithBiometrics} label={t('init.createPasskey')} loading={enrolling} />
+        {method === Method.Password ? (
+          <>
+            <Button onClick={handleContinue} label={label} />
+            {isBiometricUnlockSupported() ? (
+              <Button onClick={() => setMethod(Method.Biometrics)} label={t('init.useBiometrics')} secondary />
+            ) : null}
+          </>
         ) : (
-          <Button onClick={handleContinue} label={label} />
+          <Button onClick={() => setMethod(Method.Password)} label={t('init.usePassword')} secondary />
         )}
-        {biometrics ? (
-          <Button onClick={() => setBiometrics(false)} label={t('init.usePassword')} secondary />
-        ) : isBiometricUnlockSupported() ? (
-          <Button onClick={() => setBiometrics(true)} label={t('init.useBiometrics')} secondary />
-        ) : null}
       </ButtonsOnBottom>
     </>
   )

@@ -85,8 +85,6 @@ export const translations = {
       createPasskey: 'Create passkey',
       biometricsDescription:
         'This will allow you to log in easily through biometrics without a need to remember the password.',
-      biometricsPasswordFallback:
-        'Set a password first for a fallback if the fingerprint fails. Without one, clearing the app data and restoring your seed is the only way back in.',
       invalidRecoveryPhrase: 'Invalid recovery phrase',
       unableToValidatePrivateKey: 'Unable to validate private key format',
       unableToValidateKey: 'Unable to validate key format',
@@ -848,8 +846,6 @@ export const translations = {
       createPasskey: 'Crear passkey',
       biometricsDescription:
         'Esto te permitirá iniciar sesión fácilmente con datos biométricos sin necesidad de recordar la contraseña.',
-      biometricsPasswordFallback:
-        'Define primero una contraseña como alternativa si falla la huella. Sin ella, la única forma de recuperar el acceso es borrar los datos de la app y restaurar con tu seed.',
       invalidRecoveryPhrase: 'Frase de recuperación inválida',
       unableToValidatePrivateKey: 'No se pudo validar el formato de la clave privada',
       unableToValidateKey: 'No se pudo validar el formato de la clave',
