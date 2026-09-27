@@ -2,7 +2,7 @@ name: Build Android APK
 
 # Manual only: every push to a Capacitor branch used to burn a full runner on a
 # build nobody was going to install. Trigger it when an artifact is actually
-# wanted, e.g. gh workflow run build-apk.yml --ref feat/capacitor-v8-hardening
+# wanted, e.g. gh workflow run build-apk.yml --ref feat/capacitor-android
 on:
   workflow_dispatch:
 

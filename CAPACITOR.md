@@ -58,7 +58,7 @@ service-worker wallet & swap adapters, deep links, native notifications,
 `capacitor-exploration`; upstream has stated Capacitor is not a near-term
 priority, so it is parked.
 
-### H — Security hardening (in progress on `feat/capacitor-v8-hardening`)
+### H — Security hardening (in progress on `feat/capacitor-android`)
 
 Addresses the production concerns raised in the design review of phase C:
 
@@ -120,7 +120,7 @@ Local connectivity constraints make CI the source of truth. The workflow is
 manual only, so an artifact is built on demand:
 
 ```bash
-gh workflow run build-apk.yml --ref feat/capacitor-v8-hardening
+gh workflow run build-apk.yml --ref feat/capacitor-android
 ```
 
 It runs install, format/lint, type-check, unit + e2e tests (Playwright), and the
@@ -147,9 +147,11 @@ signed build can be installed; from then on, later artifacts update in place.
 
 ## Branch map
 
-- `feature/capacitor-apk` — original v8 migration (phase A).
-- `feat/capacitor-v8-secure` — phases A+B+C merged.
-- `feat/capacitor-v8-hardening` — phase H (this branch).
+`feat/capacitor-android` is the single live line for the APK: phases A–H, on
+Capacitor 8. The earlier names it grew from (`feature/capacitor-apk`,
+`feat/capacitor-v8-secure`) are retired — the "v8" only existed to distinguish
+it from the Capacitor 6 line, which is gone.
 
 The web-side contributions (i18n, clipboard, fiat rates, platform-neutral
-security seam) are opened as separate pull requests against upstream `master`.
+security seam) are opened as separate pull requests against upstream `master`,
+from their own branches, which are left untouched by the work here.
