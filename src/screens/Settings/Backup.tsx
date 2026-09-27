@@ -69,8 +69,10 @@ export default function Backup() {
 
   const handleCopy = async () => {
     if (!secret) return
-    await copyToClipboard(secret)
-    toast(t('backup.copyToClipboard'))
+    // Surface the failure: claiming the seed was copied when the clipboard
+    // refused it is how a user ends up believing they have a backup they do not.
+    const copied = await copyToClipboard(secret)
+    toast(copied ? t('backup.copyToClipboard') : t('common.failedToCopy'))
   }
 
   const onChangePassword = (e: any) => {
