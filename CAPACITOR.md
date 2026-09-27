@@ -111,12 +111,11 @@ Addresses the production concerns raised in the design review of phase C:
 
 ### Design decision: why the seed blob is re-sealed, not stored beside the password
 
-An alternative was evaluated and rejected. QvaPay's pattern
-(`~/AndroidStudioProjects/mobile_app_qvpay`: `lock/AppLockContext.tsx`,
-`wallet/keystore.ts`, `helpers/biometricMarker.ts`) stores the seed in the
-Keychain _unencrypted_, gates it with a PIN, and treats biometrics as a
-disposable marker whose read _is_ the OS prompt. It has the lockout property we
-lack — losing the marker never loses the seed.
+The alternative was reviewed against other self-custody wallet projects and
+rejected. The common pattern there stores the seed in the platform keystore
+_unencrypted_, gates it with a PIN, and treats biometrics as a disposable
+marker whose read _is_ the OS prompt. It has a lockout property we lack —
+losing the marker never loses the seed.
 
 We keep the re-sealing design because the user's password is never written to
 disk: a biometric wallet keeps the seed encrypted under a device-random secret
