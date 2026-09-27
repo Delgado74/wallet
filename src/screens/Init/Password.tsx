@@ -28,18 +28,22 @@ export default function InitPassword() {
   const [enrolling, setEnrolling] = useState(false)
   const [password, setPassword] = useState<string | null>(null)
 
-  // Biometrics are additive, not a replacement for the password: enrollment
-  // seals the primary blob with a device-random secret, and the password the
-  // user chose here seals the recovery vault, so both paths stay usable. The
-  // password is therefore required — biometrics on their own would leave the
-  // wallet reachable by exactly one key, with no fallback if it is lost.
+  // Password and biometrics are two independent locks, activated in their own
+  // screen and never revoking each other. Enrollment seals the primary blob
+  // with a device-random secret; a password already set here additionally seals
+  // the vault, so it becomes the fallback if the fingerprint fails. Choosing
+  // biometrics without one is allowed — the seed is then the only way back in.
   const continueWithBiometrics = async () => {
-    if (!password) return
     setEnrolling(true)
     try {
       const { password: devicePassword, passkeyId } = await registerBiometricUnlock()
       updateWallet({ ...wallet, lockedByBiometrics: true, passkeyId })
-      setInitInfo({ ...initInfo, password: devicePassword, recoveryPassword: password, restoring: false })
+      setInitInfo({
+        ...initInfo,
+        password: devicePassword,
+        recoveryPassword: password ?? undefined,
+        restoring: false,
+      })
       navigate(Pages.InitConnect)
     } catch (err) {
       consoleLog(err)
@@ -48,7 +52,6 @@ export default function InitPassword() {
   }
 
   const handleContinue = () => {
-    if (biometrics) return continueWithBiometrics()
     setInitInfo({ ...initInfo, password: password ? password : defaultPassword, restoring: false })
     navigate(Pages.InitConnect)
   }
@@ -74,30 +77,30 @@ export default function InitPassword() {
                     {t('init.biometricsDescription')}
                   </Text>
                 </OnboardStaggerChild>
+                {!password ? (
+                  <OnboardStaggerChild>
+                    <Text centered color='neutral-500' small wrap>
+                      {t('init.biometricsPasswordFallback')}
+                    </Text>
+                  </OnboardStaggerChild>
+                ) : null}
               </OnboardStaggerContainer>
             </CenterScreen>
-          ) : null}
-          <OnboardStaggerContainer>
-            <OnboardStaggerChild>
-              <NewPassword onNewPassword={setPassword} setLabel={setLabel} />
-            </OnboardStaggerChild>
-            {biometrics ? (
+          ) : (
+            <OnboardStaggerContainer>
               <OnboardStaggerChild>
-                <Text color={password ? 'neutral-500' : 'danger'} small wrap>
-                  {t('init.biometricsPasswordRequired')}
-                </Text>
+                <NewPassword onNewPassword={setPassword} setLabel={setLabel} />
               </OnboardStaggerChild>
-            ) : null}
-          </OnboardStaggerContainer>
+            </OnboardStaggerContainer>
+          )}
         </Padded>
       </Content>
       <ButtonsOnBottom>
-        <Button
-          onClick={handleContinue}
-          label={label}
-          loading={enrolling}
-          disabled={enrolling || (biometrics && !password)}
-        />
+        {biometrics ? (
+          <Button onClick={continueWithBiometrics} label={t('init.createPasskey')} loading={enrolling} />
+        ) : (
+          <Button onClick={handleContinue} label={label} />
+        )}
         {biometrics ? (
           <Button onClick={() => setBiometrics(false)} label={t('init.usePassword')} secondary />
         ) : isBiometricUnlockSupported() ? (

@@ -85,7 +85,8 @@ export const translations = {
       createPasskey: 'Create passkey',
       biometricsDescription:
         'This will allow you to log in easily through biometrics without a need to remember the password.',
-      biometricsPasswordRequired: 'Set a password: it is your fallback if the fingerprint fails.',
+      biometricsPasswordFallback:
+        'Set a password first for a fallback if the fingerprint fails. Without one, clearing the app data and restoring your seed is the only way back in.',
       invalidRecoveryPhrase: 'Invalid recovery phrase',
       unableToValidatePrivateKey: 'Unable to validate private key format',
       unableToValidateKey: 'Unable to validate key format',
@@ -140,7 +141,6 @@ export const translations = {
         "Your browser does not support the Notifications API. If on iOS you'll need to 'Add to homescreen' and be running iOS 16.4 or higher.",
       changePassword: 'Change password',
       useBiometrics: 'Use biometrics',
-      biometricsPasswordRequired: 'Set a password first: it is your fallback if the fingerprint fails.',
       success: 'Success',
       lock: 'Lock',
       noPasswordDefined: 'No password defined',
@@ -848,7 +848,8 @@ export const translations = {
       createPasskey: 'Crear passkey',
       biometricsDescription:
         'Esto te permitirá iniciar sesión fácilmente con datos biométricos sin necesidad de recordar la contraseña.',
-      biometricsPasswordRequired: 'Define una contraseña: será tu alternativa si falla la huella.',
+      biometricsPasswordFallback:
+        'Define primero una contraseña como alternativa si falla la huella. Sin ella, la única forma de recuperar el acceso es borrar los datos de la app y restaurar con tu seed.',
       invalidRecoveryPhrase: 'Frase de recuperación inválida',
       unableToValidatePrivateKey: 'No se pudo validar el formato de la clave privada',
       unableToValidateKey: 'No se pudo validar el formato de la clave',
@@ -903,7 +904,6 @@ export const translations = {
         'Tu navegador no soporta la API de Notificaciones. En iOS necesitas "Añadir a pantalla de inicio" y tener iOS 16.4 o superior.',
       changePassword: 'Cambiar contraseña',
       useBiometrics: 'Usar datos biométricos',
-      biometricsPasswordRequired: 'Define primero una contraseña: será tu alternativa si falla la huella.',
       success: 'Éxito',
       lock: 'Bloqueo',
       noPasswordDefined: 'Sin contraseña definida',

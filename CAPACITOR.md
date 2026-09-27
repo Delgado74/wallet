@@ -64,7 +64,7 @@ Addresses the production concerns raised in the design review of phase C:
 
 - **Password recovery vault, coexisting with biometrics.** A biometric-locked
   wallet whose device secret is lost is otherwise irrecoverable without the
-  seed phrase. A second copy of the mnemonic/nsec, sealed with the user's *own*
+  seed phrase. A second copy of the mnemonic/nsec, sealed with the user's _own_
   password, is kept when biometrics are enrolled on a wallet that has a real
   password (never the default one). The password and the biometric unlock
   coexist: using either one never re-seals or revokes the other, and losing
@@ -80,7 +80,7 @@ Addresses the production concerns raised in the design review of phase C:
   lockout hole where a wallet ended up reachable by a single key with no
   fallback.
 - **Enrollment is additive at creation, not exclusive.** Wallet creation used
-  to offer *either* a password *or* a passkey, and choosing the passkey left
+  to offer _either_ a password _or_ a passkey, and choosing the passkey left
   the wallet sealed by the device secret alone — the reported failure mode was
   "fingerprint fails, password cannot open it, only option is uninstall and
   re-enter the seed". The password form now stays on screen while biometrics
@@ -90,10 +90,50 @@ Addresses the production concerns raised in the design review of phase C:
   biometry is pinned to `strong`, so a PIN/pattern shared credential and
   spoofable weak biometry cannot gate a decrypting secret. Devices without
   strong biometry simply use the wallet password.
+- **Two independent locks.** The seed/nsec custodies the funds; the password
+  and biometrics are only the app's security layer, and neither revokes the
+  other. A biometric wallet seals the primary blob with a device-random secret
+  and, when a user-chosen password exists, keeps a vault copy under it, so a
+  failed or lost fingerprint still leaves a way in. Where a wallet has no user
+  password, biometrics are the only key and the seed is the recovery path — the
+  app never presents a dead end, and never seals the vault with the device
+  secret or the public default password.
+- **Each lock is activated in its own place.** Wallet creation offers password
+  or passkey on separate screens (`Init/Password.tsx`); neither is blocked by
+  the other, and a password set before enrolling becomes the fallback. The
+  unlock screen shows both paths when both exist, and the password alone
+  otherwise (`NeedsPassword.tsx` probes the vault, since a password field that
+  could never succeed is worse than none).
 - **Known limitation (unchanged, release work):** the unlock is
   authenticate-then-fetch. A first-party plugin binding the secret to the
   platform's biometric access control (`kSecAccessControlBiometryCurrentSet` /
   Android Keystore `setUserAuthenticationRequired`) is future release work.
+
+### Design decision: why the seed blob is re-sealed, not stored beside the password
+
+An alternative was evaluated and rejected. QvaPay's pattern
+(`~/AndroidStudioProjects/mobile_app_qvpay`: `lock/AppLockContext.tsx`,
+`wallet/keystore.ts`, `helpers/biometricMarker.ts`) stores the seed in the
+Keychain _unencrypted_, gates it with a PIN, and treats biometrics as a
+disposable marker whose read _is_ the OS prompt. It has the lockout property we
+lack — losing the marker never loses the seed.
+
+We keep the re-sealing design because the user's password is never written to
+disk: a biometric wallet keeps the seed encrypted under a device-random secret
+and stores the password only as a second encrypted copy. Two honest caveats,
+both already stated in `src/runtime/security.ts`:
+
+- On native, the encrypted blob and the unlock secret live in the _same_
+  substrate (`SecureStorage`, i.e. Keystore-backed), because `secretStorage.ts`
+  installs the secure-storage adapter for the blob as well. So per-wallet
+  encryption is not a security boundary there — the real boundary is secure
+  storage plus the prompt, and the design is chosen for lockout behaviour
+  rather than for an extra layer of at-rest protection.
+- The unlock is authenticate-then-fetch, not hardware-bound gating. Binding the
+  secret to the platform's biometric access control
+  (`kSecAccessControlBiometryCurrentSet` / Android Keystore
+  `setUserAuthenticationRequired`) is deliberately _not_ done: such an entry is
+  deleted when biometrics are re-enrolled, which for a seed means lost funds.
 
 ## Validation
 
@@ -113,7 +153,7 @@ actually replace the one already installed on a device:
   `~/.android/debug.keystore` in CI, so every build shares the same signature.
 - **Monotonic versionCode.** `scripts/prepare-android.mjs` bumps
   `versionCode`/`versionName` from the commit count (`git rev-list HEAD
-  --count`), which grows on the append-only branch history. Android refuses an
+--count`), which grows on the append-only branch history. Android refuses an
   install over an equal `versionCode`.
 
 Builds produced before this landed were signed with throwaway runner keys, so

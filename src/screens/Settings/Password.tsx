@@ -101,19 +101,16 @@ export default function Password() {
   /**
    * Enrolls biometric unlock as a second lock on top of the seed, never as a
    * replacement for the password: the primary blob is resealed with the
-   * device-random secret while a vault copy is sealed with a real user
-   * password, so a failed or lost fingerprint still leaves a way in.
+   * device-random secret, and a vault copy is sealed with a real user password
+   * whenever one exists, so a failed or lost fingerprint still leaves a way in.
    *
    * A wallet with no user-defined password (the public default) has nothing
-   * worth sealing the vault with, so the new password typed in the form is
-   * required first — mirroring what other wallets do.
+   * worth sealing the vault with, so biometrics end up as the only key and the
+   * seed becomes the recovery path. The device secret and the public default
+   * are never used as the vault sealer.
    */
   const registerUserBiometrics = async () => {
     const vaultPassword = oldPassword === defaultPassword ? newPassword : oldPassword
-    if (!vaultPassword) {
-      setError(t('settings.biometricsPasswordRequired'))
-      return
-    }
     try {
       setSaving(true)
       const { password: devicePassword, passkeyId } = await registerBiometricUnlock()
@@ -121,10 +118,10 @@ export default function Password() {
       if (!secret) throw new Error('Invalid password')
       if (secret.kind === 'mnemonic') {
         await setMnemonic(secret.value, devicePassword)
-        await setMnemonicRecovery(secret.value, vaultPassword)
+        if (vaultPassword) await setMnemonicRecovery(secret.value, vaultPassword)
       } else {
         await setPrivateKey(secret.value, devicePassword)
-        await setPrivateKeyRecovery(secret.value, vaultPassword)
+        if (vaultPassword) await setPrivateKeyRecovery(secret.value, vaultPassword)
       }
       updateWallet({ ...wallet, lockedByBiometrics: true, passkeyId })
       setSuccessText(t('settings.passwordChangedToBiometrics'))
