@@ -51,6 +51,21 @@ import { AssetsContext } from '../../../providers/assets'
 import { LnReceiveContext } from '../../../providers/lnReceive'
 import { useTranslation } from '../../../providers/language'
 
+/** Throw marker the catch side maps to a translatable message in the UI. */
+const NO_LIGHTNING_SOLVER_ERROR = 'no_lightning_solver'
+
+/**
+ * Decide which value the QR should encode. Honours an explicit copy-sheet
+ * selection, but only while that value is still one we currently offer — once
+ * the selected address is regenerated or removed (e.g. an amount
+ * change), fall back to the unified BIP21 URI. This stops async rebuilds from
+ * silently reverting the user's pick and copying the wrong thing.
+ */
+export const resolveQrValue = (selected: string, options: { bip21: string; btc: string; ark: string }): string => {
+  const candidates = [options.bip21, options.btc, options.ark].filter(Boolean)
+  return selected && candidates.includes(selected) ? selected : options.bip21
+}
+
 export default function ReceiveQRCode() {
   const { t } = useTranslation()
   const { aspInfo } = useContext(AspContext)
@@ -175,7 +190,7 @@ export default function ReceiveQRCode() {
       // per-network pin as the fallback co-signer key, for solver cards that
       // predate `emulator_pubkey` — the card's own value wins where it has one.
       const rendezvous = lnReceiveRendezvous(await discoverMarkets(network), getEmulatorPubkeyForNetwork(network))
-      if (!rendezvous) throw new Error('No Lightning solver available')
+      if (!rendezvous) throw new Error(NO_LIGHTNING_SOLVER_ERROR)
       if (satoshis < rendezvous.minSats || satoshis > rendezvous.maxSats) {
         throw new Error(
           `Amount outside solver bounds (${prettyNumber(rendezvous.minSats)}-${prettyNumber(rendezvous.maxSats)} sats)`,
@@ -417,10 +432,6 @@ export default function ReceiveQRCode() {
     trusted: Boolean(assetId && isRegistered(assetId)),
   }
 
-  // What the monitored receive is doing, if there is one. The VTXO listener
-  // above still reports the credit; this is what can say the payment was LOST —
-  // `refunded` on a receive leg means the solver reclaimed a lockup we never
-  // claimed, which nothing else on this screen could distinguish from waiting.
   const rfqId = recvInfo.pendingLnReceive?.rfqId
   const receiveState = rfqId ? status(rfqId) : undefined
   const claimError = rfqId ? claimErrorFor(rfqId) : undefined
@@ -494,7 +505,9 @@ export default function ReceiveQRCode() {
                   <TextSecondary>
                     {lnHeldElsewhere
                       ? t('receive.lightningHeldElsewhere')
-                      : t('receive.lightningUnavailable', { error: lnReceiveError })}
+                      : lnReceiveError === NO_LIGHTNING_SOLVER_ERROR
+                        ? t('receive.lightningUnavailable', { error: t('receive.noLightningSolver') })
+                        : t('receive.lightningUnavailable', { error: lnReceiveError })}
                   </TextSecondary>
                   {lnRetryable ? (
                     <Button label={t('common.tryAgain')} onClick={() => setNegotiateAttempt((n) => n + 1)} secondary />
@@ -612,7 +625,7 @@ export default function ReceiveQRCode() {
             {t('receive.addAmount')}
           </Text>
           <InputAmount
-            label={t('common.amount')}
+            label={t('receive.amount')}
             asset={assetOption}
             value={amountTextValue}
             focus={!isMobileBrowser}
@@ -644,7 +657,7 @@ export default function ReceiveQRCode() {
               if (method) handleMethodChange(method.id)
             }}
             copied={copied}
-          />
+          />{' '}
         </FlexCol>
       </SheetModal>
     </>
@@ -730,6 +743,7 @@ function AddressLine({
   onSelect: (value: string) => void
   copied: string
 }) {
+  const { t } = useTranslation()
   return (
     <Focusable
       onEnter={() => {
@@ -744,7 +758,7 @@ function AddressLine({
         </FlexCol>
         <Button
           copy
-          ariaLabel={`Copy ${title}`}
+          ariaLabel={t('receive.copyAria', { title })}
           testId={testId + '-address-copy'}
           onClick={(event) => {
             event.stopPropagation()

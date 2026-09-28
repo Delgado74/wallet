@@ -44,10 +44,10 @@ const TransactionLine = ({
   const { config } = useContext(ConfigContext)
   const { fromFiatAmount, toFiatAmount } = useContext(FiatContext)
   const { assetMetadataCache } = useContext(WalletContext)
-  const { t } = useTranslation()
+  const { language, t } = useTranslation()
 
   const date = tx.createdAt
-    ? prettyDate(tx.createdAt)
+    ? prettyDate(tx.createdAt, language)
     : tx.boardingTxid
       ? t('transaction.unconfirmed')
       : t('common.unknown')
@@ -330,7 +330,13 @@ export default function TransactionsList({
 
   const ariaLabel = (tx?: Tx) => {
     if (!tx) return t('transaction.keyboardNavHint')
-    return t('transaction.keyboardNavAria', { type: tx.type, amount: String(tx.amount) })
+    const typeLabel =
+      tx.type === 'sent'
+        ? t('transaction.sent')
+        : tx.type === 'exit'
+          ? t('transaction.exited')
+          : t('transaction.received')
+    return t('transaction.keyboardNavAria', { type: typeLabel, amount: String(tx.amount) })
   }
 
   const handleClick = (tx: Tx) => {

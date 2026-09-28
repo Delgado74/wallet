@@ -40,8 +40,10 @@ export default function Server() {
   }
 
   useEffect(() => {
-    setError(aspInfo.unreachable ? aspErrorText(aspInfo, t('init.arkadeServerUnreachable')) : '')
-  }, [aspInfo.unreachable, aspInfo.outdated])
+    setError(
+      aspInfo.unreachable ? aspErrorText(aspInfo, t('init.arkadeServerUnreachable'), t('errors.outdatedWallet')) : '',
+    )
+  }, [aspInfo.unreachable, aspInfo.outdated, t])
 
   useEffect(() => {
     if (!aspUrl || !isValidUrl(aspUrl)) return
@@ -52,7 +54,7 @@ export default function Server() {
       setError(info.unreachable ? t('settings.unableToConnect') : '')
       setInfo(info)
     })
-  }, [aspUrl])
+  }, [aspUrl, t])
 
   if (!svcWallet) return <LoadingLogo text={t('common.loading')} />
 

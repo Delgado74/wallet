@@ -55,7 +55,7 @@ export default function Transaction() {
   const { aspInfo, calcBestMarketHour } = useContext(AspContext)
   const { assetMetadataCache, isVerifiedAsset, settlePreconfirmed, vtxos, vtxoManager, wallet, svcWallet } =
     useContext(WalletContext)
-  const { t } = useTranslation()
+  const { language, t } = useTranslation()
 
   const liveSwap = txInfo?.assetSwap?.fundingTxid
     ? swaps.find((swap) => swap.fundingTxid === txInfo.assetSwap?.fundingTxid)
@@ -168,13 +168,21 @@ export default function Transaction() {
 
   if (!tx) return <></>
 
-  const status = expiredBoardingTx
+  // Status booleans mirror the state machine; the translated `status` string is
+  // display-only so control flow never depends on the active locale.
+  const statusExpired = Boolean(expiredBoardingTx)
+  const statusUnconfirmed = Boolean(unconfirmedBoardingTx)
+  const statusPendingBoarding = Boolean(boardingTx && tx.preconfirmed)
+  const statusSettled = Boolean(settleSuccess || tx.settled)
+  const statusPreconfirmed = !statusExpired && !statusUnconfirmed && !statusPendingBoarding && !statusSettled
+
+  const status = statusExpired
     ? t('transaction.expired')
-    : unconfirmedBoardingTx
+    : statusUnconfirmed
       ? t('transaction.unconfirmed')
-      : boardingTx && tx.preconfirmed
+      : statusPendingBoarding
         ? t('transaction.pendingBoarding')
-        : settleSuccess || tx.settled
+        : statusSettled
           ? t('transaction.settled')
           : t('transaction.preconfirmed')
 
@@ -202,7 +210,7 @@ export default function Transaction() {
               ? t('transaction.amountSent')
               : t('transaction.amountReceived')
   const date = tx.createdAt
-    ? prettyDate(tx.createdAt)
+    ? prettyDate(tx.createdAt, language)
     : !unconfirmedBoardingTx
       ? t('common.unknown')
       : t('transaction.unconfirmed')
@@ -335,12 +343,12 @@ export default function Transaction() {
   )
 
   const showCompleteBoarding =
-    status === 'Pending boarding' && utxoTxsAllowed() && vtxoTxsAllowed() && !settleSuccess && !settling
+    statusPendingBoarding && utxoTxsAllowed() && vtxoTxsAllowed() && !settleSuccess && !settling
 
   // if server defines that UTXO transactions are not allowed,
   // don't allow settlement since it is a UTXO transaction.
   const showSettleButtons =
-    status === 'Preconfirmed' &&
+    statusPreconfirmed &&
     hasInputsToSettle &&
     utxoTxsAllowed() &&
     vtxoTxsAllowed() &&

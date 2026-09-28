@@ -10,7 +10,7 @@ import {
 import type { WalletAssetSwap } from '../../lib/swapRepository'
 import { MUTINYNET_USDT_ASSET_ID } from '../../lib/accountAssets'
 import { Currencies, Language, Tx, Unit } from '../../lib/types'
-import { translate } from '../../providers/language'
+import { translate } from '../../lib/i18n'
 
 const PRICE = 63_750 // USD per whole BTC
 

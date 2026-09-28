@@ -9,9 +9,9 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { extractError } from '../lib/error'
 import { cameraErrorText, queryCameraPermission } from '../lib/camera'
+import { useTranslation } from '../providers/language'
 import QrScanner from 'qr-scanner'
 import { Capacitor } from '@capacitor/core'
-import { useTranslation } from '../providers/language'
 
 const videoStyle: React.CSSProperties = {
   borderRadius: '0.5rem',

@@ -198,7 +198,13 @@ export default function SendForm() {
   const liquidBalance = liquidBtcBalance(availableBalance, reserveApplied, aspInfo.dust)
 
   const smartSetError = (str: string) => {
-    setError(str === '' ? (aspInfo.unreachable ? aspErrorText(aspInfo, t('init.arkadeServerUnreachable')) : '') : str)
+    setError(
+      str === ''
+        ? aspInfo.unreachable
+          ? aspErrorText(aspInfo, t('init.arkadeServerUnreachable'), t('errors.outdatedWallet'))
+          : ''
+        : str,
+    )
   }
 
   // Prefer display-currency entry when conversion is available; otherwise
@@ -350,6 +356,7 @@ export default function SendForm() {
           }
           setSelectedAsset(found)
           const rawAmount = assetAmount ? unitsToCents(assetAmount, found.decimals) : BigInt(0)
+          if (assetAmount) setAmountTextValue(assetAmount)
           return setSendInfo((prev) => ({
             ...prev,
             address,
@@ -596,18 +603,18 @@ export default function SendForm() {
 
   // manage server unreachable error
   useEffect(() => {
-    const errTxt = aspErrorText(aspInfo, t('init.arkadeServerUnreachable'))
+    const errTxt = aspErrorText(aspInfo, t('init.arkadeServerUnreachable'), t('errors.outdatedWallet'))
     if (!aspInfo.unreachable) {
       // Server reachable again: clear either unavailable variant we may have
       // shown (generic unreachable or the outdated-client message) without
       // clobbering unrelated errors.
-      const outdatedTxt = aspErrorText({ ...aspInfo, outdated: true }, errTxt)
+      const outdatedTxt = aspErrorText({ ...aspInfo, outdated: true }, errTxt, t('errors.outdatedWallet'))
       setError((prev) => (prev === errTxt || prev === outdatedTxt ? '' : prev))
       return
     }
     setError(errTxt)
     setLabel(t('send.serverUnreachable'))
-  }, [aspInfo.unreachable, aspInfo.outdated])
+  }, [aspInfo.unreachable, aspInfo.outdated, t])
 
   // proceed to next step
   useEffect(() => {

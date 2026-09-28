@@ -10,8 +10,8 @@ import { consoleError } from '../../lib/logs'
 import { useLoadingStatus } from '../../hooks/useLoadingStatus'
 import { setLoadingStatus } from '../../lib/loadingStatus'
 import { NavigationContext, Pages } from '../../providers/navigation'
-import ErrorMessage from '../../components/Error'
 import { useTranslation } from '../../providers/language'
+import ErrorMessage from '../../components/Error'
 
 export default function InitConnect() {
   const { initInfo, setInitInfo } = useContext(FlowContext)
@@ -55,9 +55,8 @@ export default function InitConnect() {
 
   const abortConnectionWithError = (err: any) => {
     consoleError(err, 'Error during connection:')
-    const message = err instanceof Error ? err.message : String(err)
     setLoadingStatus(t('init.connectionFailed'))
-    setError(message)
+    setError(t('init.connectionFailed'))
     setConnectDone(true)
   }
 

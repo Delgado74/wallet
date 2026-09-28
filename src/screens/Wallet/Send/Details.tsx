@@ -31,13 +31,13 @@ import { useTranslation } from '../../../providers/language'
 export default function SendDetails() {
   const displayContext = useAmountDisplayContext()
   const { navigate } = useContext(NavigationContext)
+  const { aspInfo } = useContext(AspContext)
   const { sendInfo, setSendInfo } = useContext(FlowContext)
   const { calcOnchainOutputFee } = useContext(FeesContext)
   const isAssetSend = Boolean(sendInfo.account || sendInfo.assets?.length)
   const { utxoTxsAllowed, vtxoTxsAllowed } = useContext(LimitsContext)
   const { assetMetadataCache, balance, reloadWallet, svcWallet } = useContext(WalletContext)
   const { trackLnSend } = useContext(LnSwapsContext)
-  const { aspInfo } = useContext(AspContext)
   const { t } = useTranslation()
 
   const assetId = sendInfo.account?.assetId ?? sendInfo.assets?.[0]?.assetId
@@ -79,6 +79,7 @@ export default function SendDetails() {
         total: feeInSats,
       })
       setButtonLabel(t('send.tapToSign'))
+      setError('')
       return
     }
     if (!satoshis) return setError(t('send.missingAmount'))
@@ -90,18 +91,29 @@ export default function SendDetails() {
           : address && utxoTxsAllowed()
             ? address
             : ''
-    const direction =
+    // Routing is a protocol decision; it must never depend on a localized string,
+    // otherwise fee math and labels drift when the language changes.
+    const destinationType =
       destination === arkAddress
-        ? t('send.payingInsideArkade')
+        ? 'arkade'
         : destination === invoice
-          ? t('send.payingToLightning')
+          ? 'lightning'
           : destination === address
+            ? 'mainnet'
+            : 'none'
+    // `direction` is display-only; keep logic keyed on `destinationType`.
+    const direction =
+      destinationType === 'arkade'
+        ? t('send.payingInsideArkade')
+        : destinationType === 'lightning'
+          ? t('send.payingToLightning')
+          : destinationType === 'mainnet'
             ? t('send.payingToMainnet')
             : ''
     // The RFQ lockup carries exactly the invoice amount (exact-out, fee_bps
     // from the card; 0 today), so total == satoshis on the Lightning path.
     const total = pendingLnSend ? pendingLnSend.fundAmount : satoshis
-    const amount = direction === t('send.payingToMainnet') ? satoshis - calcOnchainOutputFee() : satoshis
+    const amount = destinationType === 'mainnet' ? satoshis - calcOnchainOutputFee() : satoshis
     const fees = total - amount > 0 ? total - amount : 0
     setDetails({
       destination,
@@ -115,8 +127,9 @@ export default function SendDetails() {
       setError(t('send.insufficientFundsDetail', { balance: prettyNumber(balance) }))
     } else {
       setButtonLabel(t('send.tapToSign'))
+      setError('')
     }
-  }, [sendInfo])
+  }, [sendInfo, t, balance, vtxoTxsAllowed, utxoTxsAllowed, calcOnchainOutputFee])
 
   const handleTxid = (txid: string) => {
     if (!txid) return handleError(t('send.errorSendingTransaction'))

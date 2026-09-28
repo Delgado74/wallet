@@ -1,7 +1,7 @@
 import { beforeEach, describe, it, expect } from 'vitest'
 import { lnSwapLabel } from '../../lib/swapDisplay'
 import { Language } from '../../lib/types'
-import { translate } from '../../providers/language'
+import { translate } from '../../lib/i18n'
 
 const t = (key: string): string => translate(Language.English, key)
 import { createDefaultActivityRegistry, ServiceWorkerWallet, type Activity, type ArkTransaction } from '@arkade-os/sdk'
