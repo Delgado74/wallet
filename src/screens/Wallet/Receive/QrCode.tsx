@@ -404,7 +404,7 @@ export default function ReceiveQRCode() {
   const claimError = rfqId ? claimErrorFor(rfqId) : undefined
   const receiveLost = receiveState === 'refunded'
 
-  const data = { title: 'Receive', text: qrCodeValue }
+  const data = { title: t('wallet.receive'), text: qrCodeValue }
   const shareDisabled = !canBrowserShareData(data) || sharing || hasError || noPaymentMethods || generatingInvoice
 
   // Whether an amount is currently requested. Keyed off assetMeta to match how
@@ -552,9 +552,9 @@ export default function ReceiveQRCode() {
             onClick={() => (isMobileBrowser ? setShowKeys(true) : setShowAmountSheet(true))}
             secondary
           />
-          <Button label='Copy' onClick={handleCopyButton} secondary disabled={generatingInvoice} />
+          <Button label={t('receive.copy')} onClick={handleCopyButton} secondary disabled={generatingInvoice} />
         </FlexRow>
-        <Button label='Share' onClick={handleShare} disabled={shareDisabled} />
+        <Button label={t('receive.share')} onClick={handleShare} disabled={shareDisabled} />
       </ButtonsOnBottom>
 
       {/* Amount bottom sheet */}
@@ -564,7 +564,7 @@ export default function ReceiveQRCode() {
             {t('receive.addAmount')}
           </Text>
           <InputAmount
-            label='Amount'
+            label={t('common.amount')}
             asset={assetOption}
             value={amountTextValue}
             focus={!isMobileBrowser}
@@ -574,8 +574,8 @@ export default function ReceiveQRCode() {
             onEnter={handleAmountConfirm}
             onFocus={() => setShowKeys(isMobileBrowser)}
           />
-          <Button label='Set amount' onClick={() => handleAmountConfirm()} disabled={!amountTextValue} />
-          {hasAmount ? <Button label='Clear amount' onClick={handleAmountClear} secondary /> : null}
+          <Button label={t('receive.setAmount')} onClick={() => handleAmountConfirm()} disabled={!amountTextValue} />
+          {hasAmount ? <Button label={t('receive.clearAmount')} onClick={handleAmountClear} secondary /> : null}
         </FlexCol>
       </SheetModal>
 
@@ -583,7 +583,7 @@ export default function ReceiveQRCode() {
       <SheetModal isOpen={showCopySheet} onClose={() => setShowCopySheet(false)}>
         <FlexCol gap='1rem' padding='0.5rem 0'>
           <Text big bold>
-            Copy address
+            {t('receive.copyAddress')}
           </Text>
           <AddressList
             bip21Uri={bip21Uri}
