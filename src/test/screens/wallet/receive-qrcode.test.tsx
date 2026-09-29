@@ -120,6 +120,9 @@ const tapFixture = (addrs = { off: 'ark1testaddr', bd: 'bc1testaddr' }): RenderO
 describe('Receive QR Code screen', () => {
   beforeEach(() => {
     copyToClipboardMock.mockClear()
+    // Restored explicitly: mockClear only wipes calls, so a test that forces a
+    // failure would otherwise leak that implementation into the ones after it.
+    copyToClipboardMock.mockImplementation((v) => Promise.resolve(v))
   })
 
   // Regression for the switched-QR path. We can't drive the Copy sheet in
@@ -228,6 +231,23 @@ describe('Receive QR Code screen', () => {
       fireEvent.click(qrButton)
     })
     expect(copyToClipboardMock.mock.calls.at(-1)?.[0]).toContain('lightning=')
+  })
+
+  // A refused clipboard write used to be toasted as a success, and the copied
+  // marker was set anyway, so the screen claimed a value was on the clipboard
+  // when the payer scanning it would find the previous contents. This exercises
+  // handleCopy; handleCopyButton is unreachable here because the copy sheet is
+  // an IonModal that portals outside the React root.
+  it('reports a refused clipboard write instead of claiming success', async () => {
+    copyToClipboardMock.mockResolvedValue(false)
+    renderReceiveQrCode(tapFixture())
+
+    const qrButton = await screen.findByRole('button', { name: 'Copy QR code' })
+    await act(async () => {
+      fireEvent.click(qrButton)
+    })
+
+    expect(await screen.findByText('Failed to copy')).toBeInTheDocument()
   })
 
   // The unified BIP21 URI is the right default — it serves every payer that
