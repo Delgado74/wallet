@@ -21,7 +21,7 @@ describe('tokenLogoTickerForTicker', () => {
 describe('TokenLogo', () => {
   it('renders the Cuban flag for CUP', () => {
     const { container } = render(<TokenLogo ticker='CUP' />)
-    expect(container.querySelector('clipPath#cu-flag-circle')).not.toBeNull()
+    expect(container.querySelector('clipPath[id^="cu-flag-circle"]')).not.toBeNull()
     expect(container.innerHTML).toContain('#0050A7')
     expect(container.innerHTML).toContain('#D22228')
   })
@@ -33,5 +33,37 @@ describe('TokenLogo', () => {
     expect(svg!.querySelectorAll('rect')).toHaveLength(5)
     expect(svg!.querySelector('polygon')).not.toBeNull()
     expect(svg!.querySelector('path')).not.toBeNull()
+  })
+})
+
+describe('TokenLogo clip path ids', () => {
+  // A transaction list or a swap route can render the same flag more than once,
+  // and the circle is applied through a url(#id) reference, so a shared id was
+  // duplicate HTML that made both logos resolve to whichever came first.
+  it('gives each instance of a repeated flag its own clip path', () => {
+    const { container } = render(
+      <>
+        <TokenLogo ticker='USD' />
+        <TokenLogo ticker='USD' />
+      </>,
+    )
+    const ids = [...container.querySelectorAll('clipPath')].map((c) => c.id)
+    expect(ids).toHaveLength(2)
+    expect(new Set(ids).size).toBe(2)
+  })
+
+  it('points each flag at a clip path defined in its own svg', () => {
+    const { container } = render(
+      <>
+        <TokenLogo ticker='USD' />
+        <TokenLogo ticker='CUP' />
+      </>,
+    )
+    for (const svg of container.querySelectorAll('svg')) {
+      const reference = svg.querySelector('g[clip-path]')?.getAttribute('clip-path') ?? ''
+      const id = reference.replace(/^url\(#/, '').replace(/\)$/, '')
+      expect(id).not.toBe('')
+      expect(svg.querySelector(`clipPath[id="${id}"]`)).not.toBeNull()
+    }
   })
 })
