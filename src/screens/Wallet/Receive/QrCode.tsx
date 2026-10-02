@@ -366,9 +366,9 @@ export default function ReceiveQRCode() {
     if (generatingInvoice) return
     if (!prefersReducedMotion) hapticSubtle()
     const copied = await copyToClipboard(value)
-    toast(copied ? t('common.copiedToClipboard') : t('common.failedToCopy'))
-    // The sheet closes either way — leaving it open on failure would strand the
-    // picker — but the copied marker must only follow a write that landed.
+    // useCopyToClipboard already toasts the outcome. The sheet closes either
+    // way — leaving it open on failure would strand the picker — but the copied
+    // marker must only follow a write that landed.
     setShowCopySheet(false)
     if (copied) setCopied(value)
   }
@@ -379,7 +379,6 @@ export default function ReceiveQRCode() {
     setShowCopySheet(true)
     if (qrCodeValue && copied !== qrCodeValue) {
       const written = await copyToClipboard(qrCodeValue)
-      toast(written ? t('common.copiedToClipboard') : t('common.failedToCopy'))
       if (written) setCopied(qrCodeValue)
     }
   }

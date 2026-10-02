@@ -13,7 +13,6 @@ import {
   ArkError,
   DelegateInfo,
   toXOnlySignerHex,
-hasTerminalSpend,
   isVtxoExpiringSoon,
   isVtxoSpent,
 } from '@arkade-os/sdk'
