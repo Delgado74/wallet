@@ -11,6 +11,7 @@ import { onboardStaggerContainer, EASE_OUT_QUINT_TUPLE } from '../../lib/animati
 import { useReducedMotion } from '../../hooks/useReducedMotion'
 import OnboardingLogo from '../../components/OnboardingLogo'
 import PixelSunrise from '../../components/PixelSunrise'
+import SmallLogo from '../../components/SmallLogo'
 import { copyToClipboard } from '../../lib/clipboard'
 import CopyIcon from '../../icons/Copy'
 import CheckMarkIcon from '../../icons/CheckMark'
@@ -107,8 +108,6 @@ export default function InAppBrowser() {
   }, [])
 
   const handleCopy = async () => {
-    // copyToClipboard resolves false instead of throwing, so the catch this
-    // used to wrap could never fire — the copied marker was set either way.
     const copied = await copyToClipboard(window.location.href)
     if (!copied) return
     if (copyTimeout.current) clearTimeout(copyTimeout.current)
@@ -166,7 +165,9 @@ export default function InAppBrowser() {
                     justifyContent: 'center',
                     flexShrink: 0,
                   }}
-                />
+                >
+                  {contentReady ? <SmallLogo /> : null}
+                </div>
                 <motion.div
                   initial={prefersReduced ? false : { opacity: 0, y: 6 }}
                   animate={

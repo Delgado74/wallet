@@ -3,8 +3,9 @@ import { walletAccountTicker, type WalletAccountTicker } from '../lib/accountAss
 
 // Each flag clips through a url(#id) reference, so the id has to be unique per
 // instance: a transaction list or a swap route can render the same flag more
-// than once, and duplicate ids are invalid HTML that resolve to whichever
-// came first in the document.
+// than once, and duplicate ids are invalid HTML that resolve to whichever came
+// first in the document. The colons useId() emits are stripped because they
+// make the url(#...) reference awkward to read and to grep.
 function useClipId(name: string) {
   return `${name}-${useId().replace(/:/g, '')}`
 }

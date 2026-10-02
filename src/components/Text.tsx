@@ -1,7 +1,5 @@
 import { ReactNode } from 'react'
-import { copyToClipboard } from '../lib/clipboard'
-import { useToast } from './Toast'
-import { useTranslation } from '../providers/language'
+import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 import { hapticSubtle } from '../lib/haptics'
 
 interface TextProps {
@@ -66,14 +64,12 @@ export default function Text({
     wordBreak: 'break-word',
   }
 
-  const { toast } = useToast()
-  const { t } = useTranslation()
+  const copyToClipboard = useCopyToClipboard()
 
-  const handleClick = async () => {
+  const handleClick = () => {
     if (!copy) return
     hapticSubtle()
-    const copied = await copyToClipboard(copy)
-    toast(copied ? t('common.copiedToClipboard') : t('common.failedToCopy'))
+    copyToClipboard(copy)
   }
 
   return (

@@ -31,8 +31,7 @@ import InputAmount from '../../../components/InputAmount'
 import Keyboard, { KeyboardInputMode } from '../../../components/Keyboard'
 import SheetModal from '../../../components/SheetModal'
 import Text, { TextSecondary } from '../../../components/Text'
-import { copyToClipboard } from '../../../lib/clipboard'
-import { useToast } from '../../../components/Toast'
+import { useCopyToClipboard } from '../../../hooks/useCopyToClipboard'
 import { prettyLongText, prettyNumber, toSatoshis } from '../../../lib/format'
 import CopyIcon from '../../../icons/Copy'
 import CheckMarkIcon from '../../../icons/CheckMark'
@@ -54,18 +53,6 @@ import { useTranslation } from '../../../providers/language'
 /** Throw marker the catch side maps to a translatable message in the UI. */
 const NO_LIGHTNING_SOLVER_ERROR = 'no_lightning_solver'
 
-/**
- * Decide which value the QR should encode. Honours an explicit copy-sheet
- * selection, but only while that value is still one we currently offer — once
- * the selected address is regenerated or removed (e.g. an amount
- * change), fall back to the unified BIP21 URI. This stops async rebuilds from
- * silently reverting the user's pick and copying the wrong thing.
- */
-export const resolveQrValue = (selected: string, options: { bip21: string; btc: string; ark: string }): string => {
-  const candidates = [options.bip21, options.btc, options.ark].filter(Boolean)
-  return selected && candidates.includes(selected) ? selected : options.bip21
-}
-
 export default function ReceiveQRCode() {
   const { t } = useTranslation()
   const { aspInfo } = useContext(AspContext)
@@ -79,7 +66,7 @@ export default function ReceiveQRCode() {
   const { assetMetadataCache, svcWallet } = useContext(WalletContext)
   const { utxoTxsAllowed, vtxoTxsAllowed } = useContext(LimitsContext)
 
-  const { toast } = useToast()
+  const copyToClipboard = useCopyToClipboard()
 
   const [assetAmount, setAssetAmount] = useState(BigInt(0))
   const [amountTextValue, setAmountTextValue] = useState('')
@@ -529,7 +516,7 @@ export default function ReceiveQRCode() {
                   stacked exactly under the QR — the QR then paints over it and
                   swallows the taps, which read as "selecting copies". */}
               {paymentMethods.length > 1 ? (
-                <div className='mt-20 mb-3'>
+                <div className='mt-20 mb-3 w-full max-w-85'>
                   <SegmentedControl
                     options={paymentMethods.map((m) => m.id)}
                     selected={activeMethod}

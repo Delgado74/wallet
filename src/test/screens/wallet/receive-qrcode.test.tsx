@@ -19,6 +19,8 @@ import { ConfigContext } from '../../../providers/config'
 import { FiatContext } from '../../../providers/fiat'
 import { NotificationsContext } from '../../../providers/notifications'
 import { ToastProvider } from '../../../components/Toast'
+import { LanguageContext, translate } from '../../../providers/language'
+import { Language } from '../../../lib/types'
 import ReceiveQRCode from '../../../screens/Wallet/Receive/QrCode'
 
 // Mock qr module used by QrCode component
@@ -39,6 +41,14 @@ vi.mock('../../../lib/haptics', () => ({
   hapticLight: vi.fn(),
   setHapticsEnabled: vi.fn(),
 }))
+
+// IonModal does not render in jsdom; keep the sheet's open/closed contract.
+vi.mock('../../../components/SheetModal', () => ({
+  default: ({ isOpen, children }: { isOpen: boolean; children?: React.ReactNode }) =>
+    isOpen ? <div data-testid='sheet-modal'>{children}</div> : null,
+}))
+vi.mock('../../../icons/CheckMark', () => ({ default: () => <span>MARKER-COPIED</span> }))
+vi.mock('../../../icons/Copy', () => ({ default: () => <span>MARKER-IDLE</span> }))
 
 // Mock URL.createObjectURL
 if (!globalThis.URL.createObjectURL) {
@@ -69,6 +79,7 @@ type RenderOverrides = {
   flow?: Partial<typeof mockFlowContextValue>
   wallet?: Partial<typeof mockWalletContextValue>
   config?: Partial<typeof mockConfigContextValue>
+  language?: Language
 }
 
 function buildTree(overrides?: RenderOverrides) {
@@ -76,26 +87,32 @@ function buildTree(overrides?: RenderOverrides) {
   const wallet = { ...mockWalletContextValue, ...overrides?.wallet }
   const config = { ...mockConfigContextValue, ...overrides?.config }
 
+  const language = overrides?.language ?? Language.English
+
   return (
-    <ToastProvider>
-      <NavigationContext.Provider value={mockNavigationContextValue}>
-        <AspContext.Provider value={mockAspContextValue}>
-          <ConfigContext.Provider value={config as any}>
-            <FiatContext.Provider value={mockFiatContextValue as any}>
-              <NotificationsContext.Provider value={mockNotificationsContextValue as any}>
-                <FlowContext.Provider value={flow as any}>
-                  <WalletContext.Provider value={wallet as any}>
-                    <LimitsContext.Provider value={mockLimitsContextValue}>
-                      <ReceiveQRCode />
-                    </LimitsContext.Provider>
-                  </WalletContext.Provider>
-                </FlowContext.Provider>
-              </NotificationsContext.Provider>
-            </FiatContext.Provider>
-          </ConfigContext.Provider>
-        </AspContext.Provider>
-      </NavigationContext.Provider>
-    </ToastProvider>
+    <LanguageContext.Provider
+      value={{ language, t: (k: string, p?: Record<string, string | number>) => translate(language, k, p) }}
+    >
+      <ToastProvider>
+        <NavigationContext.Provider value={mockNavigationContextValue}>
+          <AspContext.Provider value={mockAspContextValue}>
+            <ConfigContext.Provider value={config as any}>
+              <FiatContext.Provider value={mockFiatContextValue as any}>
+                <NotificationsContext.Provider value={mockNotificationsContextValue as any}>
+                  <FlowContext.Provider value={flow as any}>
+                    <WalletContext.Provider value={wallet as any}>
+                      <LimitsContext.Provider value={mockLimitsContextValue}>
+                        <ReceiveQRCode />
+                      </LimitsContext.Provider>
+                    </WalletContext.Provider>
+                  </FlowContext.Provider>
+                </NotificationsContext.Provider>
+              </FiatContext.Provider>
+            </ConfigContext.Provider>
+          </AspContext.Provider>
+        </NavigationContext.Provider>
+      </ToastProvider>
+    </LanguageContext.Provider>
   )
 }
 
@@ -120,9 +137,6 @@ const tapFixture = (addrs = { off: 'ark1testaddr', bd: 'bc1testaddr' }): RenderO
 describe('Receive QR Code screen', () => {
   beforeEach(() => {
     copyToClipboardMock.mockClear()
-    // Restored explicitly: mockClear only wipes calls, so a test that forces a
-    // failure would otherwise leak that implementation into the ones after it.
-    copyToClipboardMock.mockImplementation((v) => Promise.resolve(v))
   })
 
   // Regression for the switched-QR path. We can't drive the Copy sheet in
@@ -233,38 +247,6 @@ describe('Receive QR Code screen', () => {
     expect(copyToClipboardMock.mock.calls.at(-1)?.[0]).toContain('lightning=')
   })
 
-  // A refused clipboard write used to be toasted as a success, and the copied
-  // marker was set anyway, so the screen claimed a value was on the clipboard
-  // when the payer scanning it would find the previous contents. This drives
-  // handleCopy, off the QR image itself.
-  it('reports a refused clipboard write instead of claiming success', async () => {
-    copyToClipboardMock.mockResolvedValue(false)
-    renderReceiveQrCode(tapFixture())
-
-    const qrButton = await screen.findByRole('button', { name: 'Copy QR code' })
-    await act(async () => {
-      fireEvent.click(qrButton)
-    })
-
-    expect(await screen.findByText('Failed to copy')).toBeInTheDocument()
-  })
-
-  // The copy button is a separate handler (handleCopyButton) that also opens
-  // the format-picker sheet, so it needs its own pass: the sheet is an IonModal
-  // that portals outside the React root, but the write and its toast happen
-  // before that matters.
-  it('reports a refused clipboard write from the copy button too', async () => {
-    copyToClipboardMock.mockResolvedValue(false)
-    renderReceiveQrCode(tapFixture())
-
-    const copyButton = await screen.findByRole('button', { name: 'Copy' })
-    await act(async () => {
-      fireEvent.click(copyButton)
-    })
-
-    expect(await screen.findByText('Failed to copy')).toBeInTheDocument()
-  })
-
   // The unified BIP21 URI is the right default — it serves every payer that
   // understands it — but a pure off-chain wallet cannot read the invoice buried
   // in its `lightning=` parameter. So the method has to be selectable without
@@ -352,6 +334,20 @@ describe('Receive QR Code screen', () => {
       }
     })
 
+    // The selector is part of a fully translated screen, so its labels have to
+    // come from the dictionary rather than being baked in. Without the three
+    // receive.method* keys this renders English labels inside the Spanish UI.
+    it('translates the method labels like the rest of the screen', async () => {
+      renderReceiveQrCode({ ...amountFixture('lnbc10u1ptest'), language: Language.Spanish })
+
+      await screen.findByText('Unificado')
+      // The other three keep their name in both languages, so only 'Unified'
+      // differs; the point is that it is translated at all.
+      for (const label of ['Unificado', 'Lightning', 'Arkade', 'Bitcoin']) {
+        expect(screen.getByText(label)).toBeInTheDocument()
+      }
+    })
+
     // Changing the amount clears the invoice so the solver renegotiates (see
     // the amount handler), and the replacement arrives under a new preimage.
     // The choice has to outlast that: tracking the *invoice* instead of the
@@ -389,5 +385,84 @@ describe('Receive QR Code screen', () => {
       })
       expect(screen.getByText('Unified')).toBeInTheDocument()
     })
+  })
+})
+
+describe('Receive QR Code screen — copy feedback', () => {
+  beforeEach(() => {
+    copyToClipboardMock.mockClear()
+    // mockClear keeps implementations; restore so a forced failure does not leak.
+    copyToClipboardMock.mockImplementation((v) => Promise.resolve(v))
+  })
+
+  it('reports a refused clipboard write instead of claiming success', async () => {
+    copyToClipboardMock.mockResolvedValue(false)
+    renderReceiveQrCode(tapFixture())
+
+    const qrButton = await screen.findByRole('button', { name: 'Copy QR code' })
+    await act(async () => {
+      fireEvent.click(qrButton)
+    })
+
+    expect(await screen.findByText('Failed to copy')).toBeInTheDocument()
+  })
+
+  const clickQr = async () => {
+    const qrButton = await screen.findByRole('button', { name: 'Copy QR code' })
+    await act(async () => {
+      fireEvent.click(qrButton)
+    })
+  }
+
+  const openCopySheet = async () => {
+    const copyButton = await screen.findByRole('button', { name: 'Copy' })
+    await act(async () => {
+      fireEvent.click(copyButton)
+    })
+  }
+
+  it('marks the copied value in the sheet after a successful copy', async () => {
+    renderReceiveQrCode(tapFixture())
+
+    await clickQr()
+    await openCopySheet()
+
+    expect(copyToClipboardMock).toHaveBeenCalledTimes(1)
+    expect(screen.getByTestId('sheet-modal')).toHaveTextContent('MARKER-COPIED')
+  })
+
+  it('leaves the sheet unmarked after a refused copy', async () => {
+    copyToClipboardMock.mockResolvedValue(false)
+    renderReceiveQrCode(tapFixture())
+
+    await clickQr()
+    await openCopySheet()
+
+    expect(screen.getByTestId('sheet-modal')).not.toHaveTextContent('MARKER-COPIED')
+  })
+
+  it('closes the sheet when a row copy is refused', async () => {
+    copyToClipboardMock.mockResolvedValue(false)
+    renderReceiveQrCode(tapFixture())
+
+    await openCopySheet()
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('ark-address-copy'))
+    })
+
+    expect(await screen.findAllByText('Failed to copy')).not.toHaveLength(0)
+    expect(screen.queryByTestId('sheet-modal')).not.toBeInTheDocument()
+  })
+
+  it('reports a refused clipboard write from the copy button too', async () => {
+    copyToClipboardMock.mockResolvedValue(false)
+    renderReceiveQrCode(tapFixture())
+
+    const copyButton = await screen.findByRole('button', { name: 'Copy' })
+    await act(async () => {
+      fireEvent.click(copyButton)
+    })
+
+    expect(await screen.findByText('Failed to copy')).toBeInTheDocument()
   })
 })
