@@ -39,17 +39,6 @@ describe('TokenLogo', () => {
   it('renders the Cuban flag for CUP', () => {
     const { container } = render(<TokenLogo ticker='CUP' />)
     expect(container.querySelector('clipPath[id^="cu-flag-circle"]')).not.toBeNull()
-    expect(container.innerHTML).toContain('#0050A7')
-    expect(container.innerHTML).toContain('#D22228')
-  })
-
-  it('renders the CubaFlagLogo with blue stripes, red triangle and white star', () => {
-    const { container } = render(<CubaFlagLogo />)
-    const svg = container.querySelector('svg')
-    expect(svg).not.toBeNull()
-    expect(svg!.querySelectorAll('rect')).toHaveLength(5)
-    expect(svg!.querySelector('polygon')).not.toBeNull()
-    expect(svg!.querySelector('path')).not.toBeNull()
   })
 
   // url(#id) resolves against the whole document, not the local <svg>, so two

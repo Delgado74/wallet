@@ -116,6 +116,7 @@ export function UsdcLogo() {
 
 export function UnitedStatesFlagLogo() {
   const clipId = useClipId('us-flag-circle')
+
   return (
     <svg aria-hidden='true' viewBox='0 0 32 32' focusable='false'>
       <defs>
@@ -180,6 +181,7 @@ export function SwitzerlandFlagLogo() {
 
 export function BrazilFlagLogo() {
   const clipId = useClipId('br-flag-circle')
+
   return (
     <svg aria-hidden='true' viewBox='0 0 32 32' focusable='false'>
       <defs>
@@ -214,6 +216,7 @@ export function ChinaFlagLogo() {
 
 export function CubaFlagLogo() {
   const clipId = useClipId('cu-flag-circle')
+  const stripeH = 6.4
   return (
     <svg aria-hidden='true' viewBox='0 0 32 32' focusable='false'>
       <defs>
@@ -222,17 +225,15 @@ export function CubaFlagLogo() {
         </clipPath>
       </defs>
       <g clipPath={`url(#${clipId})`}>
-        <g>
-          <rect x='0' y='0' width='32' height='6.4' fill='#0050A7' />
-          <rect x='0' y='6.4' width='32' height='6.4' fill='#FFF' />
-          <rect x='0' y='12.8' width='32' height='6.4' fill='#0050A7' />
-          <rect x='0' y='19.2' width='32' height='6.4' fill='#FFF' />
-          <rect x='0' y='25.6' width='32' height='6.4' fill='#0050A7' />
-        </g>
-        <polygon points='0,0 0,32 24,16' fill='#D22228' />
+        <path fill='#FFF' d='M0 0h32v32H0z' />
+        <path
+          fill='#002590'
+          d={`M0 0h32v${stripeH}H0zm0 ${stripeH * 2}h32v${stripeH}H0zm0 ${stripeH * 4}h32v${stripeH}H0z`}
+        />
+        <path fill='#CB1515' d='M0 0l14.8 16L0 32z' />
         <path
           fill='#FFF'
-          d='M7.5 10.8L8.734 14.301 12.446 14.393 9.497 16.649 10.557 20.207 7.5 18.1 4.443 20.207 5.503 16.649 2.554 14.393 6.266 14.301z'
+          d='M5 13.2L5.65 15.11 7.66 15.14 6.05 16.34 6.65 18.27 5 17.1 3.35 18.27 3.95 16.34 2.34 15.14 4.35 15.11Z'
         />
       </g>
     </svg>
@@ -266,6 +267,7 @@ export function JapanFlagLogo() {
 
 export function UnitedKingdomFlagLogo() {
   const clipId = useClipId('gb-flag-circle')
+
   return (
     <svg aria-hidden='true' viewBox='0 0 32 32' focusable='false'>
       <defs>

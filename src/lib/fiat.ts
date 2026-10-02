@@ -1,6 +1,30 @@
 import { consoleError } from './logs'
 import { Currencies, Unit } from './types'
 
+const YADIO_URL = 'https://api.yadio.io/exrates/BTC'
+// A hung provider must not stall the feed: without a deadline a connection that
+// accepts but never responds would block the fallback indefinitely.
+const FETCH_TIMEOUT_MS = 10_000
+
+// Keeps a single deadline over the whole request: both `fetch` (headers) and
+// body consumption can hang independently, and either would otherwise block
+// the feed (and its fallback) forever. The deadline is raced against each step
+// instead of being passed as an AbortSignal, because the jsdom test environment
+// hands out a signal type the fetch Request constructor rejects.
+const fetchJsonWithTimeout = async (url: string): Promise<Record<string, any>> => {
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  const deadline = new Promise<never>((_, reject) => {
+    timeout = setTimeout(() => reject(new Error(`Request timed out after ${FETCH_TIMEOUT_MS}ms`)), FETCH_TIMEOUT_MS)
+  })
+  try {
+    const resp = await Promise.race([fetch(url), deadline])
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+    return await Promise.race([resp.json(), deadline])
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
 export interface FiatPrices {
   eur: number
   usd: number
@@ -38,8 +62,7 @@ export const getPriceFeed = async (): Promise<FiatPrices | undefined> => {
 
   // Fallback provider for regions where Yadio.io is unreachable.
   try {
-    const resp = await fetch('https://blockchain.info/ticker')
-    const json = await resp.json()
+    const json = await fetchJsonWithTimeout('https://blockchain.info/ticker')
     return {
       eur: json.EUR?.last,
       usd: json.USD?.last,
@@ -59,10 +82,15 @@ export const getPriceFeed = async (): Promise<FiatPrices | undefined> => {
 // from the USD/CUP relationship on the Cuban market) plus every other currency
 // in one response, so a single fetch covers the whole wallet.
 const fetchYadioPrices = async (): Promise<FiatPrices | undefined> => {
-  const resp = await fetch('https://api.yadio.io/exrates/BTC')
-  const json = await resp.json()
+  const json = await fetchJsonWithTimeout(YADIO_URL)
   const btc = json?.BTC
+  // A connection may resolve yet omit a rate (or carry a non-numeric one).
+  // Return undefined so a partial feed falls back instead of surfacing a
+  // currency with no price to the provider. CUP is optional: its absence only
+  // degrades the CUP display, never the rest of the feed.
   if (!btc) return undefined
+  const nonCupRates = [btc.EUR, btc.USD, btc.CHF, btc.JPY, btc.GBP, btc.CNY, btc.BRL] as (number | undefined)[]
+  if (!nonCupRates.every((rate) => typeof rate === 'number' && Number.isFinite(rate) && rate > 0)) return undefined
   return {
     eur: btc.EUR,
     usd: btc.USD,
@@ -71,7 +99,7 @@ const fetchYadioPrices = async (): Promise<FiatPrices | undefined> => {
     gbp: btc.GBP,
     cny: btc.CNY,
     brl: btc.BRL,
-    cup: btc.CUP,
+    cup: Number.isFinite(btc.CUP) && btc.CUP > 0 ? btc.CUP : undefined,
   }
 }
 
@@ -80,9 +108,9 @@ const fetchYadioPrices = async (): Promise<FiatPrices | undefined> => {
 // degrades only the CUP display, never the rest of the feed.
 const getCupPrice = async (): Promise<number | undefined> => {
   try {
-    const resp = await fetch('https://api.yadio.io/exrates/BTC')
-    const json = await resp.json()
-    return json?.BTC?.CUP
+    const json = await fetchJsonWithTimeout(YADIO_URL)
+    const cup = json?.BTC?.CUP
+    return Number.isFinite(cup) && cup > 0 ? cup : undefined
   } catch (err) {
     consoleError(err, 'error fetching CUP price')
   }

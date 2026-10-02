@@ -28,12 +28,12 @@ export function useAmountDisplayContext() {
 export function useTransactionAmountDisplay(tx: Tx | undefined): TransactionAmountDisplay | undefined {
   const context = useAmountDisplayContext()
   if (!tx || tx.type === 'swap') return undefined
-  // Lightning sends: the amount includes the solver fee (fundAmount), shown
-  // with a combined "amount + swap fee" label so the user sees the total.
-  const satoshis = tx.assets?.length ? 0 : tx.type === 'sent' ? Math.max(tx.amount - defaultFee, 0) : tx.amount
   return buildTransactionAmountDisplay({
     ...context,
     assets: tx.assets,
-    satoshis,
+    // On asset transfers tx.amount is only the data carrier, not the asset value.
+    // Sent amounts stay GROSS (fee included) — the headline is the full debit,
+    // with the fee broken out on its own receipt row; the e2e suite pins this.
+    satoshis: tx.assets?.length ? 0 : Math.max(tx.type === 'sent' ? tx.amount - defaultFee : tx.amount, 0),
   })
 }
