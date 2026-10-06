@@ -642,6 +642,8 @@ export const translations = {
       parameters: 'Parameters',
       deprecatedSigner: 'deprecated signer',
       deprecatedSignerCutoff: 'deprecated signer · past cutoff',
+      refundLocktime: 'Refund locktime',
+      pastRefundLocktime: 'Past refund locktime',
     },
     mint: {
       title: 'Mint Asset',
@@ -1450,6 +1452,8 @@ export const translations = {
       parameters: 'Parámetros',
       deprecatedSigner: 'firmante obsoleto',
       deprecatedSignerCutoff: 'firmante obsoleto · fecha límite superada',
+      refundLocktime: 'Tiempo de reembolso',
+      pastRefundLocktime: 'Tiempo de reembolso pasado',
     },
     mint: {
       title: 'Acuñar activo',
