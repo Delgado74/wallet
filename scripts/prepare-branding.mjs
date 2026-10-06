@@ -9,8 +9,10 @@ const RES = resolve(ROOT, 'android/app/src/main/res')
 const ICON = resolve(ROOT, 'public/arkade-icon-512.png')
 
 const DENSITIES = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi']
-const BRAND_COLOR = '#0B6B6F'
-const SPLASH_RGB = [0x0b, 0x6b, 0x6f]
+// Brand primary from tokens.css (--purple-700). Carried over from the CanoArk
+// branding era, the teal splash/background was not part of the Arkade identity.
+const BRAND_COLOR = '#391998'
+const SPLASH_RGB = [0x39, 0x19, 0x98]
 
 function fail(msg) {
   console.error(`[prepare-branding] ERROR: ${msg}`)
@@ -87,7 +89,7 @@ for (const den of DENSITIES) {
   writeFileSync(join(RES, `drawable-port-${den}/splash.png`), splash)
   writeFileSync(join(RES, `drawable-land-${den}/splash.png`), splash)
 }
-console.log('[prepare-branding] Splash de color de marca (#0B6B6F) aplicado a drawable(-port/-land)-*')
+console.log('[prepare-branding] Splash de color de marca (#391998) aplicado a drawable(-port/-land)-*')
 
 const colorPath = join(RES, 'values/ic_launcher_background.xml')
 const colorXml = read(colorPath, 'values/ic_launcher_background.xml')
