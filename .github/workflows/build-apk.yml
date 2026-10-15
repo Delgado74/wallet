@@ -3,8 +3,13 @@ name: Build Android APK
 # Manual only: every push to a Capacitor branch used to burn a full runner on a
 # build nobody was going to install. Trigger it when an artifact is actually
 # wanted, e.g. gh workflow run build-apk.yml --ref feat/capacitor-android
+# Exception: the mutinynet test-ASP branch builds on every push (dispatch is
+# disabled on this fork).
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feat/capacitor-android-mutinynet
 
 jobs:
   build:
