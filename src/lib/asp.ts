@@ -281,7 +281,7 @@ export const sendOffChain = async (wallet: IWallet, amount: number, address: str
     }
   }
 
-  return wallet.sendBitcoin({ address, amount, selectedVtxos })
+  return wallet.send({ recipients: [{ address, amount }], selectedVtxos })
 }
 
 export const getInputsToSettle = async (
@@ -399,7 +399,7 @@ export const renewCoins = async (
 export const delegateVtxos = async (wallet: ServiceWorkerWallet): Promise<void> => {
   const cm = await wallet.getContractManager()
   const contractWithVtxos = await cm.getContractsWithVtxos({ type: 'delegate' }, undefined, { unspentOnly: true })
-  const dm = await wallet.getDelegatorManager()
+  const dm = await wallet.getDelegateManager()
 
   if (!dm) {
     throw new Error('Delegator manager not found')
