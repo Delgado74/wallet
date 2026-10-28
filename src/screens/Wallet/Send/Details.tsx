@@ -6,54 +6,52 @@ import Padded from '../../../components/Padded'
 import ButtonsOnBottom from '../../../components/ButtonsOnBottom'
 import Details, { DetailsProps } from '../../../components/Details'
 import ErrorMessage from '../../../components/Error'
-import { WalletContext } from '../../../providers/wallet'
-import { AspContext } from '../../../providers/asp'
-import { SwapsContext } from '../../../providers/swaps'
-import Header from '../../../components/Header'
-import { defaultFee } from '../../../lib/constants'
-import { prettyNumber } from '../../../lib/format'
-import Content from '../../../components/Content'
-import FlexCol from '../../../components/FlexCol'
-import { InsufficientFundsError, maxCollaborativeExit, sendOffChain } from '../../../lib/asp'
-import {
-  ASSET_RAIL,
-  LNURL_ARKADE_RAIL,
-  ONCHAIN_ROUTE_LOG,
-  ONCHAIN_SWAP_RAIL,
-  fundedResult,
-  isLnurlRail,
-  previewOnchainCost,
-  quoteIsForThisInvoice,
-  quoteIsForThisSend,
-  withinPricingBudget,
-} from '../../../lib/sendRouter'
-import { extractError } from '../../../lib/error'
-import LoadingLogo from '../../../components/LoadingLogo'
-import { consoleError, consoleLog } from '../../../lib/logs'
-import type { RouteQuote } from '@arkade-os/sdk'
-import { lnurlQuoteMeta } from '@arkade-os/lnurl-client/arkade'
-import { LimitsContext } from '../../../providers/limits'
-import { AspContext } from '../../../providers/asp'
-import { FeesContext } from '../../../providers/fees'
-import { buildTransactionAmountDisplay } from '../../../lib/transactionAmountDisplay'
-import { useAmountDisplayContext } from '../../../hooks/useTransactionAmountDisplay'
-import TransactionAmountSummary from '../../../components/TransactionAmountSummary'
-import { saveTransactionActivityMetadata } from '../../../lib/storage'
-import { lnurlSends, recordLnurlSend, watchLnurlConfirmation } from '../../../lib/lnurlSends'
-import { useTranslation } from '../../../providers/language'
-
-export default function SendDetails() {
-  const displayContext = useAmountDisplayContext()
-  const { navigate } = useContext(NavigationContext)
-  const { aspInfo } = useContext(AspContext)
-  const { appIntent, sendInfo, setAppIntent, setSendInfo } = useContext(FlowContext)
-  const { calcOnchainOutputFee, intentFee } = useContext(FeesContext)
-  const isAssetSend = Boolean(sendInfo.account || sendInfo.assets?.length)
-  const { utxoTxsAllowed, vtxoTxsAllowed } = useContext(LimitsContext)
-  const { assetMetadataCache, availableBalance, balance, reloadWallet, svcWallet } = useContext(WalletContext)
-  const { aspInfo } = useContext(AspContext)
-  const { sendRouter } = useContext(SwapsContext)
-  const { t } = useTranslation()
+  import { WalletContext } from '../../../providers/wallet'
+  import { AspContext } from '../../../providers/asp'
+  import { SwapsContext } from '../../../providers/swaps'
+  import Header from '../../../components/Header'
+  import { defaultFee } from '../../../lib/constants'
+  import { prettyNumber } from '../../../lib/format'
+  import Content from '../../../components/Content'
+  import FlexCol from '../../../components/FlexCol'
+  import { InsufficientFundsError, maxCollaborativeExit, sendOffChain } from '../../../lib/asp'
+  import {
+    ASSET_RAIL,
+    LNURL_ARKADE_RAIL,
+    ONCHAIN_ROUTE_LOG,
+    ONCHAIN_SWAP_RAIL,
+    fundedResult,
+    isLnurlRail,
+    previewOnchainCost,
+    quoteIsForThisInvoice,
+    quoteIsForThisSend,
+    withinPricingBudget,
+  } from '../../../lib/sendRouter'
+  import { extractError } from '../../../lib/error'
+  import LoadingLogo from '../../../components/LoadingLogo'
+  import { consoleError, consoleLog } from '../../../lib/logs'
+  import type { RouteQuote } from '@arkade-os/sdk'
+  import { lnurlQuoteMeta } from '@arkade-os/lnurl-client/arkade'
+  import { LimitsContext } from '../../../providers/limits'
+  import { FeesContext } from '../../../providers/fees'
+  import { buildTransactionAmountDisplay } from '../../../lib/transactionAmountDisplay'
+  import { useAmountDisplayContext } from '../../../hooks/useTransactionAmountDisplay'
+  import TransactionAmountSummary from '../../../components/TransactionAmountSummary'
+  import { saveTransactionActivityMetadata } from '../../../lib/storage'
+  import { lnurlSends, recordLnurlSend, watchLnurlConfirmation } from '../../../lib/lnurlSends'
+  import { useTranslation } from '../../../providers/language'
+  
+  export default function SendDetails() {
+    const displayContext = useAmountDisplayContext()
+    const { navigate } = useContext(NavigationContext)
+    const { aspInfo } = useContext(AspContext)
+    const { appIntent, sendInfo, setAppIntent, setSendInfo } = useContext(FlowContext)
+    const { calcOnchainOutputFee, intentFee } = useContext(FeesContext)
+    const isAssetSend = Boolean(sendInfo.account || sendInfo.assets?.length)
+    const { utxoTxsAllowed, vtxoTxsAllowed } = useContext(LimitsContext)
+    const { assetMetadataCache, availableBalance, balance, reloadWallet, svcWallet } = useContext(WalletContext)
+    const { sendRouter } = useContext(SwapsContext)
+    const { t } = useTranslation()
 
   const assetId = sendInfo.account?.assetId ?? sendInfo.assets?.[0]?.assetId
   const assetMeta = assetId ? assetMetadataCache.get(assetId) : undefined
