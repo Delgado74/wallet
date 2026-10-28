@@ -183,8 +183,8 @@ function ScannerMills({ close, label, onData, onError, onSwitch }: ScannerProps)
         cancel = frameLoop(() => {
           const res = camera.readFrame(canvas)
           if (res) {
+            stopScan()
             onData(res)
-            handleClose()
           }
         })
       } catch (e) {
@@ -239,8 +239,8 @@ function ScannerQr({ calculateScanRegion, close, label, onData, onError, onSwitc
     qrScanner.current = new QrScanner(
       videoRef.current,
       (result) => {
+        stopScan()
         onData(result.data)
-        handleClose()
       },
       {
         maxScansPerSecond: 100,
