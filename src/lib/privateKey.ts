@@ -1,7 +1,6 @@
 import { getPublicKey, nip19 } from 'nostr-tools'
 import { defaultPassword } from './constants'
 import { MNEMONIC_STORAGE_KEY, NSEC_STORAGE_KEY } from './storageKeys'
-import { secretStore } from './secretStore'
 
 export const invalidPrivateKey = (key: Uint8Array): string => {
   if (key.length === 0) return ''
@@ -38,7 +37,7 @@ export const privateKeyToNpub = (privateKey: Uint8Array): string => {
 }
 
 export const getPrivateKey = async (password: string): Promise<Uint8Array> => {
-  const encryptedPrivateKey = await getEncryptedPrivateKey()
+  const encryptedPrivateKey = getEncryptedPrivateKey()
   if (!encryptedPrivateKey) throw new Error('No encrypted private key found')
   return decryptPrivateKey(encryptedPrivateKey, password)
 }
@@ -46,8 +45,8 @@ export const getPrivateKey = async (password: string): Promise<Uint8Array> => {
 export const setPrivateKey = async (privateKey: Uint8Array, password: string): Promise<void> => {
   try {
     const encryptedPrivateKey = await encryptPrivateKey(privateKey, password)
-    await storeEncryptedPrivateKey(encryptedPrivateKey)
-    await secretStore.removeItem(MNEMONIC_STORAGE_KEY)
+    storeEncryptedPrivateKey(encryptedPrivateKey)
+    localStorage.removeItem(MNEMONIC_STORAGE_KEY)
   } catch (error) {
     console.error('Failed to encrypt and store private key:', error)
     throw new Error('Failed to set private key')
@@ -56,7 +55,7 @@ export const setPrivateKey = async (privateKey: Uint8Array, password: string): P
 
 export const isValidPassword = async (password: string): Promise<boolean> => {
   try {
-    if (await secretStore.getItem(MNEMONIC_STORAGE_KEY)) {
+    if (localStorage.getItem(MNEMONIC_STORAGE_KEY)) {
       const { getMnemonic } = await import('./mnemonic')
       await getMnemonic(password)
       return true
@@ -72,18 +71,18 @@ export const noUserDefinedPassword = async (): Promise<boolean> => {
   return await isValidPassword(defaultPassword)
 }
 
-const storeEncryptedPrivateKey = async (encryptedPrivateKey: string): Promise<void> => {
+const storeEncryptedPrivateKey = (encryptedPrivateKey: string): void => {
   try {
-    await secretStore.setItem(NSEC_STORAGE_KEY, encryptedPrivateKey)
+    localStorage.setItem(NSEC_STORAGE_KEY, encryptedPrivateKey)
   } catch (error) {
     console.error('Failed to store encrypted private key:', error)
     throw new Error('Failed to store encrypted private key')
   }
 }
 
-const getEncryptedPrivateKey = async (): Promise<string | null> => {
+const getEncryptedPrivateKey = (): string | null => {
   try {
-    return await secretStore.getItem(NSEC_STORAGE_KEY)
+    return localStorage.getItem(NSEC_STORAGE_KEY)
   } catch (error) {
     console.error('Failed to retrieve encrypted private key:', error)
     return null

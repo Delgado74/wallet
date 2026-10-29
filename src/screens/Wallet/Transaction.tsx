@@ -229,13 +229,6 @@ export default function Transaction() {
           ? t('transaction.settled')
           : t('transaction.preconfirmed')
 
-  // Lightning sends: the fee is the solver's spread (fundAmount − invoiceAmount),
-  // shown as "Swap fees" because it is the solver's cut, not a network fee.
-  // Onchain sends: the fee is the network fee, shown as "Network fees".
-  // Received transactions always have 0 network fee.
-  // When the metadata record is absent for a sent tx (after settlement key
-  // change or restore), networkFee is undefined — no fee row is shown rather
-  // than claiming "0".
   const fees = tx.networkFee ?? (tx.type === 'sent' ? defaultFee : 0)
   // On asset transfers tx.amount is only the data carrier, not the asset value.
   // The asset-aware rows below replace the legacy Amount/Total rows.

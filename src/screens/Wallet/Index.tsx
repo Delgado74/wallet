@@ -13,7 +13,7 @@ import { NudgeContext } from '../../providers/nudge'
 import { AnnouncementContext } from '../../providers/announcements'
 import { WalletStaggerContainer, WalletStaggerChild } from '../../components/WalletLoadIn'
 import { pwaCanInstall, usePwaInstalled, canPromptInstall, promptPwaInstall } from '../../lib/pwa'
-import { isIOS, isAndroid, isNativePlatform } from '../../lib/browser'
+import { isIOS, isAndroid } from '../../lib/browser'
 import { setLogoAnchor, getBootAnimActive, subscribeBootAnim } from '../../lib/logoAnchor'
 import HomeHeader from './HomeHeader'
 import PortfolioHero from './PortfolioHero'
@@ -57,8 +57,7 @@ export default function Wallet() {
 
   const pwaInstalled = usePwaInstalled()
   const dismissed = (config?.dismissedBanners ?? []).includes('pwa-install')
-  const showPwaBanner =
-    !isNativePlatform() && pwaCanInstall() && (isIOS() || isAndroid()) && !pwaInstalled && !dismissed
+  const showPwaBanner = pwaCanInstall() && (isIOS() || isAndroid()) && !pwaInstalled && !dismissed
   const pwaBannerVisible = Boolean(nudgeCheckComplete && showPwaBanner)
   const hasHomeNotices = Boolean(nudge || pwaBannerVisible)
 

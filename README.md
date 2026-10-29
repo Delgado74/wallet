@@ -213,18 +213,3 @@ The browser asks once before it lets the installed app own that protocol. Safari
 macOS AirPlay Receiver uses port 5000 by default, which conflicts with the regtest stack.
 
 - **Fix:** Go to `System Settings > General > AirDrop & Handoff` and disable **AirPlay Receiver**.
-
-## Mobile build (Capacitor)
-
-The app ships as a native Android/iOS artifact via [Capacitor](https://capacitorjs.com/)
-on top of the same web codebase. Configuration lives in `capacitor.config.ts`
-(`com.arkade.wallet`, webDir `dist`); the generated native project is `android/`.
-
-```bash
-pnpm build
-pnpm exec capacitor sync android
-pnpm exec capacitor open android
-```
-
-The PWA stays the primary distribution target; the APK/iOS artifacts are build
-outputs of the same repo, not a separate app.

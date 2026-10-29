@@ -2,20 +2,19 @@ import { HDKey } from '@scure/bip32'
 import { mnemonicToSeedSync, validateMnemonic } from '@scure/bip39'
 import { wordlist } from '@scure/bip39/wordlists/english'
 import { MNEMONIC_STORAGE_KEY, NSEC_STORAGE_KEY } from './storageKeys'
-import { secretStore } from './secretStore'
 
-export const hasMnemonic = async (): Promise<boolean> => {
-  return (await secretStore.getItem(MNEMONIC_STORAGE_KEY)) !== null
+export const hasMnemonic = (): boolean => {
+  return localStorage.getItem(MNEMONIC_STORAGE_KEY) !== null
 }
 
 export const setMnemonic = async (mnemonic: string, password: string): Promise<void> => {
   const encrypted = await encryptMnemonic(mnemonic, password)
-  await secretStore.setItem(MNEMONIC_STORAGE_KEY, encrypted)
-  await secretStore.removeItem(NSEC_STORAGE_KEY)
+  localStorage.setItem(MNEMONIC_STORAGE_KEY, encrypted)
+  localStorage.removeItem(NSEC_STORAGE_KEY)
 }
 
 export const getMnemonic = async (password: string): Promise<string> => {
-  const encrypted = await secretStore.getItem(MNEMONIC_STORAGE_KEY)
+  const encrypted = localStorage.getItem(MNEMONIC_STORAGE_KEY)
   if (!encrypted) throw new Error('No encrypted mnemonic found')
   return decryptMnemonic(encrypted, password)
 }

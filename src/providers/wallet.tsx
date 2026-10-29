@@ -47,8 +47,6 @@ import { lnurlResyncOnPayment, syncLnurlActivity } from '../lib/lnurlActivitySyn
 import { assetSwapRepository, type WalletAssetSwap } from '../lib/swapRepository'
 import { nsecToPrivateKey, getPrivateKey, noUserDefinedPassword } from '../lib/privateKey'
 import { hasMnemonic, getMnemonic, deriveNostrKeyFromMnemonic } from '../lib/mnemonic'
-import { clearSecrets } from '../lib/secretStore'
-import { clearBiometricUnlock } from '../lib/biometricUnlock'
 import { resolveWalletMode } from '../lib/walletMode'
 import { calcBatchLifetimeMs, calcNextRollover } from '../lib/wallet'
 import { setLoadingStatus } from '../lib/loadingStatus'
@@ -422,7 +420,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setAuthState('unknown')
 
     const detectPasswordState = async () => {
-      if (await hasMnemonic()) {
+      if (hasMnemonic()) {
         try {
           await getMnemonic(defaultPassword)
           return true // passwordless
@@ -926,7 +924,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   const unlockWallet = async (password: string) => {
     try {
-      if (await hasMnemonic()) {
+      if (hasMnemonic()) {
         const mnemonic = await getMnemonic(password)
         setAuthState('authenticated')
         await initWallet({ mnemonic })
@@ -1025,8 +1023,6 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     removeServiceWorkerMessageHandler()
     forgetLnurlSends()
     await clearStorage()
-    await clearSecrets()
-    await clearBiometricUnlock()
     // swap records outlive localStorage now: without this a reset leaves the
     // previous wallet's swaps in the activity list. Never fatal — a reset that
     // aborted here would leave the wallet itself half-cleared, which is worse

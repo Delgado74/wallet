@@ -11,7 +11,7 @@ import NewPassword from '../../components/NewPassword'
 import { useContext, useEffect, useState } from 'react'
 import NeedsPassword from '../../components/NeedsPassword'
 import ButtonsOnBottom from '../../components/ButtonsOnBottom'
-import { clearBiometricUnlock, isBiometricUnlockSupported, registerBiometricUnlock } from '../../lib/biometricUnlock'
+import { isBiometricsSupported, registerUser } from '../../lib/biometrics'
 import { getPrivateKey, isValidPassword, noUserDefinedPassword, setPrivateKey } from '../../lib/privateKey'
 import { hasMnemonic, getMnemonic, setMnemonic } from '../../lib/mnemonic'
 import { useTranslation } from '../../providers/language'
@@ -47,7 +47,7 @@ export default function Password() {
     const finalPassword = nextPassword === '' ? defaultPassword : nextPassword
     try {
       setSaving(true)
-      if (await hasMnemonic()) {
+      if (hasMnemonic()) {
         const mnemonic = await getMnemonic(oldPassword)
         await setMnemonic(mnemonic, finalPassword)
       } else {
@@ -72,7 +72,7 @@ export default function Password() {
   }
 
   const registerUserBiometrics = () => {
-    registerBiometricUnlock()
+    registerUser()
       .then(({ password, passkeyId }) => {
         updateWallet({ ...wallet, lockedByBiometrics: true, passkeyId })
         saveNewPassword(password, true)
@@ -82,13 +82,7 @@ export default function Password() {
 
   const handleContinue = async () => {
     const ok = await saveNewPassword(newPassword, false)
-    if (!ok) return
-    // Password and biometric unlock are exclusive, so the device secret is now
-    // dead key material: the blob was just re-sealed with the password. Drop it
-    // instead of leaving a second copy of the wallet's encryption key in
-    // secure storage, where nothing would ever use or clear it again.
-    if (wallet.lockedByBiometrics) await clearBiometricUnlock()
-    updateWallet({ ...wallet, lockedByBiometrics: false })
+    if (ok) updateWallet({ ...wallet, lockedByBiometrics: false })
   }
 
   if (!authenticated && !successText) return <NeedsPassword error={error} onPassword={setOldPassword} />
@@ -109,7 +103,7 @@ export default function Password() {
       {successText ? null : (
         <ButtonsOnBottom>
           <Button onClick={handleContinue} label={label} disabled={newPassword === null || saving} loading={saving} />
-          {wallet.lockedByBiometrics || !isBiometricUnlockSupported() ? null : (
+          {wallet.lockedByBiometrics || !isBiometricsSupported() ? null : (
             <Button onClick={registerUserBiometrics} label={t('settings.useBiometrics')} secondary />
           )}
         </ButtonsOnBottom>
