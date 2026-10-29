@@ -58,7 +58,12 @@ jobs:
         run: pnpm build
 
       - name: Initialize Capacitor
-        run: npx cap add android
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          else
+            echo "android directory exists, skipping cap add"
+          fi
 
       - name: Apply Arkade branding (icons + splash)
         run: node scripts/prepare-branding.mjs
