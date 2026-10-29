@@ -82,9 +82,18 @@ export default function App() {
 
   const { outcomeOf } = useContext(SwapsContext)
   const loadingStatus = useLoadingStatus()
-  const isIAB = useMemo(() => isInAppBrowser(), [])
-  const [isCapable, setIsCapable] = useState(false)
-  const [jsCapabilitiesChecked, setJsCapabilitiesChecked] = useState(false)
+  const isIAB = useMemo(() => {
+    try {
+      const cap = (window as any).Capacitor
+      if (cap?.isNativePlatform?.()) return false
+    } catch {}
+    try {
+      if (location.hostname === 'localhost') return false
+    } catch {}
+    return isInAppBrowser()
+  }, [])
+  const [isCapable, setIsCapable] = useState(true)
+  const [jsCapabilitiesChecked, setJsCapabilitiesChecked] = useState(true)
   const [bootAnimActive, setBootAnimActive] = useState(false)
   // Syncs the external store before React re-renders, so Wallet reads
   // the correct value on the same frame LoadingLogo unmounts.
@@ -112,29 +121,6 @@ export default function App() {
   if (orientation && typeof orientation.lock === 'function') {
     orientation.lock('portrait').catch(() => {})
   }
-
-  // Check JavaScript capabilities on mount
-  useEffect(() => {
-    try {
-      const cap = (window as any).Capacitor
-      if (cap?.isNativePlatform?.() || (typeof cap?.getPlatform === 'function' && cap.getPlatform() !== 'web')) {
-        setIsCapable(true)
-        setJsCapabilitiesChecked(true)
-        return
-      }
-    } catch {}
-    try {
-      if (location.hostname === 'localhost' && /Android|iPhone|iPad|iPod/.test(navigator.userAgent) && (window as any).Capacitor) {
-        setIsCapable(true)
-        setJsCapabilitiesChecked(true)
-        return
-      }
-    } catch {}
-    detectJSCapabilities()
-      .then((res) => setIsCapable(res.isSupported))
-      .catch(() => setIsCapable(true))
-      .finally(() => setJsCapabilitiesChecked(true))
-  }, [])
 
   // Global escape key to go back to wallet
   useEffect(() => {
