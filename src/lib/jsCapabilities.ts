@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core'
+
 /**
  * Detects if JavaScript and required capabilities are available in the current environment.
  * This is particularly important for restricted browsers (like iOS PWAs with JIT disabled)
@@ -19,6 +21,15 @@ export interface JSCapabilityCheck {
  */
 export const detectJSCapabilities = async (): Promise<JSCapabilityCheck> => {
   try {
+    // In Capacitor native apps (Android/iOS) the WebView has full capabilities
+    // and these browser restriction checks cause false negatives
+    try {
+      if (Capacitor?.isNativePlatform?.()) {
+        return { isSupported: true }
+      }
+    } catch {
+      // ignore
+    }
     // Check for Web Workers support (required for the wallet service worker)
     if (!window.Worker) {
       return {
