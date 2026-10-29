@@ -115,9 +115,24 @@ export default function App() {
 
   // Check JavaScript capabilities on mount
   useEffect(() => {
+    try {
+      const cap = (window as any).Capacitor
+      if (cap?.isNativePlatform?.() || (typeof cap?.getPlatform === 'function' && cap.getPlatform() !== 'web')) {
+        setIsCapable(true)
+        setJsCapabilitiesChecked(true)
+        return
+      }
+    } catch {}
+    try {
+      if (location.hostname === 'localhost' && /Android|iPhone|iPad|iPod/.test(navigator.userAgent) && (window as any).Capacitor) {
+        setIsCapable(true)
+        setJsCapabilitiesChecked(true)
+        return
+      }
+    } catch {}
     detectJSCapabilities()
       .then((res) => setIsCapable(res.isSupported))
-      .catch(() => setIsCapable(false))
+      .catch(() => setIsCapable(true))
       .finally(() => setJsCapabilitiesChecked(true))
   }, [])
 
