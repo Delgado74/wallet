@@ -11,7 +11,6 @@ import { useLoadingStatus } from '../../hooks/useLoadingStatus'
 import { setLoadingStatus } from '../../lib/loadingStatus'
 import { NavigationContext, Pages } from '../../providers/navigation'
 import { useTranslation } from '../../providers/language'
-import ErrorMessage from '../../components/Error'
 
 export default function InitConnect() {
   const { initInfo, setInitInfo } = useContext(FlowContext)
@@ -64,7 +63,6 @@ export default function InitConnect() {
     <>
       <Header text={t('init.connectingToServer')} />
       <Content>
-        {error ? <ErrorMessage error text={error} /> : null}
         <LoadingLogo
           text={loadingStatus || t('init.connectingToServerStatus')}
           exitMode={connectDone ? 'fly-up' : 'none'}

@@ -13,7 +13,6 @@ import {
   ArkError,
   DelegateInfo,
   toXOnlySignerHex,
-  isVtxoExpiringSoon,
   isVtxoSpent,
   ArkAddress,
   Estimator,
@@ -353,36 +352,8 @@ export const sendAssets = async (wallet: IWallet, address: string, assets: Asset
   return wallet.send(recipients[0])
 }
 
-export const sendOffChain = async (wallet: IWallet, amount: number, address: string, dust: bigint): Promise<string> => {
-  const dustAmount = Number(dust)
-  const virtualCoins = await wallet.getVtxos({ withRecoverable: false })
-  const sortedCoins = [...virtualCoins].sort(byExpiryAsc)
-
-  const selectedVtxos: ExtendedVirtualCoin[] = []
-  let selectedAmount = 0
-
-  for (const coin of sortedCoins) {
-    selectedVtxos.push(coin)
-    selectedAmount += coin.value
-    if (selectedAmount >= amount) break
-  }
-
-  if (selectedAmount < amount) throw new Error('Insufficient funds')
-
-  // Avoid leaving sub-dust change: when the change would fall below the dust
-  // threshold, pull in additional vtxos so the change stays spendable.
-  let changeAmount = selectedAmount - amount
-  if (changeAmount > 0 && changeAmount < dustAmount) {
-    for (const coin of sortedCoins) {
-      if (selectedVtxos.includes(coin)) continue
-      selectedVtxos.push(coin)
-      selectedAmount += coin.value
-      changeAmount = selectedAmount - amount
-      if (changeAmount >= dustAmount) break
-    }
-  }
-
-  return wallet.send({ recipients: [{ address, amount }], selectedVtxos })
+export const sendOffChain = async (wallet: IWallet, amount: number, address: string): Promise<string> => {
+  return wallet.send({ address, amount })
 }
 
 export const getInputsToSettle = async (
@@ -435,75 +406,6 @@ export const settleVtxos = async (
   }
 }
 
-/** Minimum time before expiry that the ASP will accept a VTXO as settle input.
- *  Derived from the "minExpiryGap" server constraint (~29 days). */
-const MIN_SETTLE_GAP_MS = 29 * 24 * 60 * 60 * 1000
-
-export interface ConsolidationResult {
-  consolidated: number
-  pending: number
-  nextAvailableAt?: Date
-}
-
-/** Consolidate spendable VTXOs that are within the settlement window.
- *  VTXOs with more than ~29 days until expiry cannot be settled yet. */
-export const consolidateAllSpendableVtxos = async (
-  wallet: IWallet,
-  dustAmount: bigint,
-): Promise<ConsolidationResult> => {
-  const vtxos = await wallet.getVtxos({ withRecoverable: false })
-  const spendable = vtxos.filter((v) => !v.isSpent && !v.isSwept)
-
-  if (spendable.length === 0) throw new Error('No spendable VTXOs to consolidate')
-
-  const eligible = spendable.filter((v) => isVtxoExpiringSoon(v, MIN_SETTLE_GAP_MS))
-  const pending = spendable.length - eligible.length
-
-  if (eligible.length === 0) {
-    const now = Date.now()
-    const nextEligible = spendable
-      .filter((v) => v.expiresAt)
-      .map((v) => new Date(v.expiresAt!.getTime() - MIN_SETTLE_GAP_MS))
-      .filter((d) => d.getTime() > now)
-      .sort((a, b) => a.getTime() - b.getTime())[0]
-    throw Object.assign(new Error('No VTXOs eligible for consolidation'), {
-      nextAvailableAt: nextEligible,
-      pending,
-    })
-  }
-
-  const amount = eligible.reduce((sum, v) => sum + v.value, 0)
-
-  if (amount < Number(dustAmount)) throw new Error('Total amount is below dust threshold')
-
-  const outputs = [
-    {
-      address: await wallet.getAddress(),
-      amount: BigInt(amount),
-    },
-  ]
-
-  try {
-    await wallet.settle({ inputs: eligible, outputs }, console.log)
-    return { consolidated: eligible.length, pending }
-  } catch (error) {
-    await captureSettleError(error, wallet, 'consolidateAllSpendableVtxos', {
-      dustAmount: Number(dustAmount),
-      ...summarizeInputs(eligible),
-    })
-    throw error
-  }
-}
-
-export const renewCoins = async (
-  wallet: IWallet,
-  vtxoManager: IVtxoManager,
-  dustAmount: bigint,
-  thresholdMs?: number,
-): Promise<void> => {
-  const { inputs } = await getInputsToSettle(wallet, vtxoManager, thresholdMs)
-  if (inputs.length > 0) await settleVtxos(wallet, vtxoManager, dustAmount, thresholdMs, undefined)
-}
 export const delegateVtxos = async (wallet: ServiceWorkerWallet): Promise<void> => {
   const cm = await wallet.getContractManager()
   const contractWithVtxos = await cm.getContractsWithVtxos({ type: 'delegate' }, undefined, { unspentOnly: true })

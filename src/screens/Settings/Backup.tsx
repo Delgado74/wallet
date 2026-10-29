@@ -4,7 +4,7 @@ import { useState, useEffect, useContext, useRef } from 'react'
 import Button from '../../components/Button'
 import Padded from '../../components/Padded'
 import Content from '../../components/Content'
-import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
+import { copyToClipboard } from '../../lib/clipboard'
 import Header from './Header'
 import Text, { TextSecondary } from '../../components/Text'
 import FlexCol from '../../components/FlexCol'
@@ -25,7 +25,7 @@ import Modal from '../../components/Modal'
 import InputFake from '../../components/InputFake'
 import OkIcon from '../../icons/Ok'
 import { WalletContext } from '../../providers/wallet'
-import { authenticateBiometricUnlock } from '../../lib/biometricUnlock'
+import { authenticateUser } from '../../lib/biometrics'
 import FingerprintIcon from '../../icons/Fingerprint'
 import InputPassword from '../../components/InputPassword'
 import { useTranslation } from '../../providers/language'
@@ -37,13 +37,8 @@ export default function Backup() {
 
   const { toast } = useToast()
   const { t } = useTranslation()
-  const copyToClipboard = useCopyToClipboard()
 
-  const [isMnemonicWallet, setIsMnemonicWallet] = useState(true)
-
-  useEffect(() => {
-    hasMnemonic().then(setIsMnemonicWallet)
-  }, [])
+  const isMnemonicWallet = hasMnemonic()
 
   const [secret, setSecret] = useState('')
   const [error, setError] = useState('')
@@ -71,6 +66,7 @@ export default function Backup() {
   const handleCopy = async () => {
     if (!secret) return
     await copyToClipboard(secret)
+    toast(t('backup.copyToClipboard'))
   }
 
   const onChangePassword = (e: any) => {
@@ -80,7 +76,7 @@ export default function Backup() {
   const showPrivateKey = async () => {
     if (!secret) {
       const password = wallet.lockedByBiometrics
-        ? await authenticateBiometricUnlock(wallet.passkeyId).catch(setError)
+        ? await authenticateUser(wallet.passkeyId).catch(setError)
         : enteredPassword.current
       if (!password) return
       const result = await verifyPassword(password)

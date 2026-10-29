@@ -33,7 +33,6 @@ export default function Currency() {
                   Currencies.BTC,
                   Currencies.CHF,
                   Currencies.CNY,
-                  Currencies.CUP,
                   Currencies.EUR,
                   Currencies.GBP,
                   Currencies.JPY,

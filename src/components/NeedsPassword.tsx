@@ -10,7 +10,7 @@ import { consoleError } from '../lib/logs'
 import InputPassword from './InputPassword'
 import ButtonsOnBottom from './ButtonsOnBottom'
 import { WalletContext } from '../providers/wallet'
-import { authenticateBiometricUnlock } from '../lib/biometricUnlock'
+import { authenticateUser } from '../lib/biometrics'
 import LockIcon from '../icons/Lock'
 import { useTranslation } from '../providers/language'
 
@@ -24,7 +24,7 @@ export default function NeedsPassword({ error, onPassword }: NeedsPasswordProps)
   const { t } = useTranslation()
   const [password, setPassword] = useState('')
 
-  const handleBiometrics = () => authenticateBiometricUnlock(wallet.passkeyId).then(onPassword).catch(consoleError)
+  const handleBiometrics = () => authenticateUser(wallet.passkeyId).then(onPassword).catch(consoleError)
   const handleChange = (ev: any) => setPassword(ev.target.value)
   const handleClick = () => onPassword(password)
 

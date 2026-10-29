@@ -50,7 +50,6 @@ export enum Currencies {
   JPY = 'JPY',
   CNY = 'CNY',
   BRL = 'BRL',
-  CUP = 'CUP',
   BTC = 'BTC',
 }
 
@@ -112,9 +111,6 @@ export enum Themes {
 export type LnSendActivity = {
   /** Hex pkScript of the lockup covenant — the indexer's watch key. */
   swapPkScript: string
-  /** Decoded invoice amount in sats — lets the fee be reconstructed as
-   *  fundAmount − invoiceAmount after a restore, when the stored fee is gone. */
-  invoiceAmount?: number
   /** The tx that ended the swap, absent until one exists. */
   spend?: LnSendSpend
 }

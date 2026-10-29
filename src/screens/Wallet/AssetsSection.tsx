@@ -11,11 +11,11 @@ import { useTranslation } from '../../providers/language'
 
 export default function AssetsSection() {
   const { config } = useContext(ConfigContext)
-  const { t } = useTranslation()
   const { fiatDecimals } = useContext(FiatContext)
   const { setAssetInfo } = useContext(FlowContext)
   const { navigate } = useContext(NavigationContext)
   const { isVerifiedAsset } = useContext(WalletContext)
+  const { t } = useTranslation()
 
   const { rows } = usePortfolioFiat()
   // unverified assets are spoofable, so they never show on home at all —
