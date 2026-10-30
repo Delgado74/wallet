@@ -163,7 +163,7 @@ export default function InitRestore() {
         <Padded>
           <OnboardStaggerContainer>
             <OnboardStaggerChild>
-              <FlexCol between style={{ minHeight: '100%', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+              <FlexCol between className='h-full pb-[calc(env(safe-area-inset-bottom,0px))]'>
                 <FlexCol>
                   <InputNsec
                     error={error}
