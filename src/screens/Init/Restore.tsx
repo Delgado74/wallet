@@ -163,34 +163,33 @@ export default function InitRestore() {
         <Padded>
           <OnboardStaggerContainer>
             <OnboardStaggerChild>
-              <FlexCol
-                between
-                style={{ height: '100%', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px))' } as any}
-              >
-                <FlexCol>
-                  <InputNsec
-                    error={error}
-                    value={input.value}
-                    cursor={input.cursor}
-                    helperText={helperText}
-                    onChange={handleChange}
-                    onSubmit={handleProceed}
-                    openScan={() => setScan(true)}
-                  />
-                  {devMode && mnemonic ? (
-                    <FlexCol gap='0.5rem'>
-                      <Text thin>{t('init.addressRotation')}</Text>
-                      <SegmentedControl
-                        options={['Inherit', 'Static', 'HD']}
-                        selected={rotationChoice}
-                        onChange={(v) => setRotationChoice(v as RotationChoice)}
-                      />
-                      <TextSecondary wrap>{t('init.rotationSubtext')}</TextSecondary>
-                    </FlexCol>
-                  ) : null}
+              <div style={{ height: '100%', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px))' }}>
+                <FlexCol between>
+                  <FlexCol>
+                    <InputNsec
+                      error={error}
+                      value={input.value}
+                      cursor={input.cursor}
+                      helperText={helperText}
+                      onChange={handleChange}
+                      onSubmit={handleProceed}
+                      openScan={() => setScan(true)}
+                    />
+                    {devMode && mnemonic ? (
+                      <FlexCol gap='0.5rem'>
+                        <Text thin>{t('init.addressRotation')}</Text>
+                        <SegmentedControl
+                          options={['Inherit', 'Static', 'HD']}
+                          selected={rotationChoice}
+                          onChange={(v) => setRotationChoice(v as RotationChoice)}
+                        />
+                        <TextSecondary wrap>{t('init.rotationSubtext')}</TextSecondary>
+                      </FlexCol>
+                    ) : null}
+                  </FlexCol>
+                  <TextSecondary wrap>{t('init.recoveryInstructions')}</TextSecondary>
                 </FlexCol>
-                <TextSecondary wrap>{t('init.recoveryInstructions')}</TextSecondary>
-              </FlexCol>
+              </div>
             </OnboardStaggerChild>
           </OnboardStaggerContainer>
         </Padded>
