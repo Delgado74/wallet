@@ -164,7 +164,7 @@ export default function InitRestore() {
           <OnboardStaggerContainer>
             <OnboardStaggerChild>
               <div style={{ height: '100%', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px))' }}>
-                <FlexCol between style={{ height: '100%' }}>
+                <FlexCol between>
                   <FlexCol>
                     <InputNsec
                       error={error}
