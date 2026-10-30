@@ -131,7 +131,10 @@ export default function Init() {
                 flexDirection: 'column',
                 flex: 1,
                 justifyContent: 'flex-end',
-                paddingBottom: 40,
+                paddingBottom: 'calc(40px + env(safe-area-inset-bottom, 0px))',
+                overflowY: 'auto',
+                WebkitOverflowScrolling: 'touch',
+                minHeight: 0,
               }}
             >
               {/* Logo + title stacked — logo optically centered with bullet icons */}
