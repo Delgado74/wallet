@@ -48,6 +48,8 @@ jobs:
       - name: Build web app
         env:
           VITE_ARK_SERVER: https://arkade.computer
+          VITE_LNURL_SERVER: https://arkade.computer
+          VITE_LNURL_DOMAIN: arkade.computer
         run: pnpm build
 
       - name: Initialize Capacitor
