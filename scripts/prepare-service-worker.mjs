@@ -1,15 +1,43 @@
 #!/usr/bin/env node
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { dirname, resolve, join } from 'node:path';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const MAIN_ACTIVITY = resolve(
-  ROOT,
-  'android/app/src/main/java/com/arkade/wallet/MainActivity.java',
-);
+const JAVA_ROOT = resolve(ROOT, 'android/app/src/main/java');
 
-const TARGET = `package com.delgado74.arkade;
+function findMain(dir) {
+  try {
+    const entries = readdirSync(dir);
+    for (const e of entries) {
+      const p = join(dir, e);
+      const s = statSync(p);
+      if (s.isDirectory()) {
+        const r = findMain(p);
+        if (r) return r;
+      } else if (e === 'MainActivity.java') {
+        return p;
+      }
+    }
+  } catch {}
+  return null;
+}
+
+function fail(msg) {
+  console.error(`[prepare-service-worker] ERROR: ${msg}`);
+  process.exit(1);
+}
+
+const mainActivity = findMain(JAVA_ROOT);
+if (!mainActivity) {
+  fail(`No se encontró MainActivity.java bajo ${JAVA_ROOT}. ¿Se generó android/ con "npx cap add android"?`);
+}
+
+let source = readFileSync(mainActivity, 'utf8');
+const pkgMatch = source.match(/^package\s+([^\s;]+);/m);
+const pkg = pkgMatch ? pkgMatch[1] : 'com.arkade.wallet';
+
+const TARGET = `package ${pkg};
 
 import android.os.Build;
 import android.os.Bundle;
@@ -26,12 +54,6 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Capacitor's BridgeWebViewClient serves bundled assets through
-        // shouldInterceptRequest, but Android WebView resolves service worker
-        // fetches through ServiceWorkerController instead. Without this, the
-        // service worker script is fetched from https://localhost directly and
-        // the registration fails with "unknown error occurred when fetching the
-        // script". Route those fetches through the Capacitor local server.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             ServiceWorkerController controller = ServiceWorkerController.getInstance();
             controller.setServiceWorkerClient(new ServiceWorkerClient() {
@@ -45,21 +67,9 @@ public class MainActivity extends BridgeActivity {
 }
 `;
 
-function fail(msg) {
-  console.error(`[prepare-service-worker] ERROR: ${msg}`);
-  process.exit(1);
-}
-
-let source;
-try {
-  source = readFileSync(MAIN_ACTIVITY, 'utf8');
-} catch {
-  fail(`No se encontró MainActivity.java en ${MAIN_ACTIVITY}. ¿Se generó android/ con "npx cap add android"?`);
-}
-
 if (source.includes('ServiceWorkerController')) {
   console.log('[prepare-service-worker] MainActivity ya configurado (idempotente)');
 } else {
-  writeFileSync(MAIN_ACTIVITY, TARGET);
-  console.log('[prepare-service-worker] ServiceWorkerController configurado en MainActivity');
+  writeFileSync(mainActivity, TARGET);
+  console.log(`[prepare-service-worker] ServiceWorkerController configurado en ${mainActivity} (${pkg})`);
 }
