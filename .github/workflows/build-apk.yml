@@ -69,6 +69,9 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Prepare ServiceWorker for Capacitor
+        run: node scripts/prepare-service-worker.mjs
+
       - name: Prepare Android manifest (camera + ML Kit)
         run: node scripts/prepare-android.mjs
 
