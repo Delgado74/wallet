@@ -2,13 +2,19 @@ name: Build Android APK
 
 on:
   workflow_dispatch:
-<<<<<<< HEAD
-  push:
-    branches:
-      - feature/capacitor-apk
-      - feat/capacitor-v8-secure
-=======
->>>>>>> a7b93bc3 (feat: add Capacitor Android build and APK workflow)
+    inputs:
+      ref:
+        description: 'Git ref (branch/tag/sha) to build from'
+        required: true
+        default: 'feat/capacitor-android-clean'
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
 
 jobs:
   build:
@@ -17,6 +23,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -39,11 +47,7 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install dependencies
-<<<<<<< HEAD
-        run: pnpm install --no-frozen-lockfile
-=======
         run: pnpm install
->>>>>>> a7b93bc3 (feat: add Capacitor Android build and APK workflow)
 
       - name: Build web app
         env:
@@ -53,26 +57,19 @@ jobs:
         run: pnpm build
 
       - name: Initialize Capacitor
-        run: npx cap add android
+        run: |
+          if [ -d "android" ]; then
+            echo "android/ exists, skipping npx cap add android"
+          else
+            npx cap add android
+          fi
 
-<<<<<<< HEAD
-      - name: Apply CanoArk branding (icons + splash)
-        run: node scripts/prepare-branding.mjs
-
-=======
->>>>>>> a7b93bc3 (feat: add Capacitor Android build and APK workflow)
       - name: Sync Capacitor
         run: npx cap sync android
 
       - name: Prepare Android manifest (camera + ML Kit)
         run: node scripts/prepare-android.mjs
 
-<<<<<<< HEAD
-      - name: Prepare service worker routing in MainActivity
-        run: node scripts/prepare-service-worker.mjs
-
-=======
->>>>>>> a7b93bc3 (feat: add Capacitor Android build and APK workflow)
       - name: Verify camera permissions in manifest
         run: |
           grep -q 'android.permission.CAMERA' android/app/src/main/AndroidManifest.xml
@@ -95,10 +92,5 @@ jobs:
         if: steps.find-apk.outputs.apk_path != ''
         uses: actions/upload-artifact@v4
         with:
-<<<<<<< HEAD
-          name: canoark-wallet-apk
-=======
           name: arkade-wallet-apk
->>>>>>> a7b93bc3 (feat: add Capacitor Android build and APK workflow)
           path: ${{ steps.find-apk.outputs.apk_path }}
-          retention-days: 30
