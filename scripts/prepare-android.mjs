@@ -38,6 +38,14 @@ function patchManifest(xml) {
     changed = true
   }
 
+  if (!out.includes('com.google.mlkit.vision.DEPENDENCIES')) {
+    if (out.includes('</application>')) {
+      const meta = `        <meta-data\n            android:name="com.google.mlkit.vision.DEPENDENCIES"\n            android:value="barcode" />\n`
+      out = out.replace('</application>', `${meta}    </application>`)
+      changed = true
+    }
+  }
+
   return { out, changed }
 }
 
@@ -68,7 +76,7 @@ const manifest = read(MANIFEST, 'AndroidManifest.xml')
 const m = patchManifest(manifest)
 if (m.changed) {
   writeFileSync(MANIFEST, m.out)
-  console.log('[prepare-android] Permisos CAMERA/FLASHLIGHT añadidos al manifest')
+  console.log('[prepare-android] Permisos CAMERA/FLASHLIGHT y ML Kit añadidos al manifest')
 } else {
   console.log('[prepare-android] Manifest ya configurado (idempotente)')
 }
