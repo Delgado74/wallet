@@ -1,5 +1,3 @@
-import { Capacitor } from '@capacitor/core'
-
 /**
  * Detects if JavaScript and required capabilities are available in the current environment.
  * This is particularly important for restricted browsers (like iOS PWAs with JIT disabled)
@@ -13,22 +11,15 @@ export interface JSCapabilityCheck {
 
 const isCapacitorNative = (): boolean => {
   try {
-    if (Capacitor?.isNativePlatform?.()) return true
-  } catch {}
-  try {
     const cap = (window as any).Capacitor
     if (cap?.isNativePlatform?.()) return true
     if (typeof cap?.getPlatform === 'function' && cap.getPlatform() !== 'web') return true
   } catch {}
   try {
     if ((window as any).androidInterface) return true
-    if (typeof (window as any).webkit !== 'undefined' && (window as any).webkit?.messageHandlers) {
-      // iOS WKWebView - but be careful not to block real Safari; Capacitor sets platform
-    }
   } catch {}
   try {
     if (location.hostname === 'localhost' && /Android|iPhone|iPad|iPod/.test(navigator.userAgent)) {
-      // Capacitor uses https://localhost
       if ((window as any).Capacitor) return true
     }
   } catch {}
@@ -109,46 +100,32 @@ const testCryptoPerformance = async (): Promise<JSCapabilityCheck> => {
     const startTime = performance.now()
 
     // Perform a simple but representative crypto operation
-    // This tests if the environment can handle the crypto libraries we use
-    const data = new Uint8Array(32)
-    window.crypto.getRandomValues(data)
+    const keyMaterial = new Uint8Array(32)
+    crypto.getRandomValues(keyMaterial)
 
-    // Test SHA-256 hashing (used extensively in Bitcoin/crypto operations)
-    const encoder = new TextEncoder()
-    const testData = encoder.encode('test-crypto-performance-check')
-    await window.crypto.subtle.digest('SHA-256', testData)
+    // Try to import a key and perform a hash (operations that exercise JIT)
+    const key = await crypto.subtle.importKey('raw', keyMaterial, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+
+    const data = new TextEncoder().encode('test data for performance check')
+    await crypto.subtle.sign('HMAC', key, data)
 
     const endTime = performance.now()
     const duration = endTime - startTime
 
-    // If basic crypto operations take more than 1 second, something is seriously wrong
-    // (likely JIT is disabled or environment is severely restricted)
-    if (duration > 1000) {
+    // If it takes more than 100ms for a simple operation, JIT is likely disabled
+    // or the environment is severely restricted
+    if (duration > 100) {
       return {
         isSupported: false,
-        errorMessage:
-          'JavaScript performance is severely degraded. Please enable JIT compilation in your browser settings.',
+        errorMessage: 'JavaScript performance is too slow in this environment (possible JIT disabled)',
       }
     }
 
-    return {
-      isSupported: true,
-    }
-  } catch {
+    return { isSupported: true }
+  } catch (error) {
     return {
       isSupported: false,
-      errorMessage: 'Cryptographic operations failed. Please check your browser settings.',
+      errorMessage: `Cryptographic performance test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
     }
   }
-}
-
-/**
- * Gets a user-friendly error message for restricted environments.
- * Provides specific guidance for iOS users about enabling JIT.
- */
-export const getRestrictedEnvironmentMessage = (isIOS: boolean): string => {
-  if (isIOS) {
-    return 'We need JavaScript with JIT enabled. Please go to Settings > Safari > Advanced and enable JavaScript JIT compilation.'
-  }
-  return 'We need JavaScript enabled with full capabilities. Please check your browser settings and enable JavaScript.'
 }
