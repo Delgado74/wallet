@@ -41,6 +41,14 @@ jobs:
         with:
           cmdline-tools-version: '11076708_latest'
 
+      - name: Accept Android SDK licenses
+        run: |
+          export ANDROID_HOME=$ANDROID_SDK_ROOT
+          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
+          yes | sdkmanager --licenses || true
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          yes | $ANDROID_HOME/cmdline-tools/bin/sdkmanager --licenses || true
+
       - name: Install dependencies
         run: pnpm install
 
