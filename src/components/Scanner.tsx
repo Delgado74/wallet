@@ -5,14 +5,11 @@ import ErrorMessage from './Error'
 import Header from './Header'
 import Padded from './Padded'
 import { QRCanvas, frameLoop, frontalCamera } from 'qr/dom.js'
-import { useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useRef, useEffect, useState } from 'react'
 import { extractError } from '../lib/error'
 import { cameraErrorText, queryCameraPermission } from '../lib/camera'
-import QrScanner from 'qr-scanner'
-import { Capacitor } from '@capacitor/core'
-import { BarcodeFormat, BarcodeScanner } from '@capacitor-mlkit/barcode-scanning'
 import { useTranslation } from '../providers/language'
+import QrScanner from 'qr-scanner'
 
 const videoStyle: React.CSSProperties = {
   borderRadius: '0.5rem',
@@ -28,12 +25,8 @@ interface ScannerProps {
   calculateScanRegion?: (v: HTMLVideoElement) => QrScanner.ScanRegion
 }
 
-export default function Scanner(props: ScannerProps) {
+export default function Scanner({ close, label, onData, onError }: ScannerProps) {
   const [currentImplementation, setCurrentImplementation] = useState<'qr' | 'qrmini' | 'mills'>('qr')
-
-  if (Capacitor.isNativePlatform()) {
-    return <ScannerNative onData={props.onData} onClose={props.close} onError={props.onError} />
-  }
 
   const handleSwitch = () => {
     setCurrentImplementation(
@@ -42,150 +35,16 @@ export default function Scanner(props: ScannerProps) {
   }
 
   return currentImplementation === 'qr' ? (
-    <ScannerQr
-      close={props.close}
-      label={props.label}
-      onData={props.onData}
-      onError={props.onError}
-      onSwitch={handleSwitch}
-    />
+    <ScannerQr close={close} label={label} onData={onData} onError={onError} onSwitch={handleSwitch} />
   ) : currentImplementation === 'qrmini' ? (
-    <ScannerQrMini
-      close={props.close}
-      label={props.label}
-      onData={props.onData}
-      onError={props.onError}
-      onSwitch={handleSwitch}
-    />
+    <ScannerQrMini close={close} label={label} onData={onData} onError={onError} onSwitch={handleSwitch} />
   ) : (
-    <ScannerMills
-      close={props.close}
-      label={props.label}
-      onData={props.onData}
-      onError={props.onError}
-      onSwitch={handleSwitch}
-    />
-  )
-}
-
-function ScannerNative({
-  onData,
-  onClose,
-  onError,
-}: {
-  onData: (s: string) => void
-  onClose: () => void
-  onError: (s: string) => void
-}) {
-  const { t } = useTranslation()
-  const [error, setError] = useState('')
-  const [busy, setBusy] = useState(true)
-  const [attempt, setAttempt] = useState(0)
-
-  useEffect(() => {
-    let cancelled = false
-
-    const stop = async () => {
-      try {
-        await BarcodeScanner.stopScan()
-      } catch {
-        /* ignore */
-      }
-      try {
-        await BarcodeScanner.removeAllListeners()
-      } catch {
-        /* ignore */
-      }
-    }
-
-    const start = async () => {
-      setBusy(true)
-      setError('')
-      try {
-        const { supported } = await BarcodeScanner.isSupported()
-        if (cancelled) return
-        if (!supported) {
-          setError(t('scanner.unsupported'))
-          setBusy(false)
-          return
-        }
-
-        const perm = await BarcodeScanner.requestPermissions()
-        if (cancelled) return
-        if (perm.camera === 'denied' || perm.camera === 'prompt') {
-          setError(t('scanner.permissionDenied'))
-          setBusy(false)
-          return
-        }
-
-        await BarcodeScanner.addListener('barcodeScanned', (result) => {
-          if (cancelled) return
-          const raw = result.barcode?.rawValue
-          if (raw) {
-            cancelled = true
-            stop()
-            onData(raw)
-          }
-        })
-
-        await BarcodeScanner.startScan({ formats: [BarcodeFormat.QrCode] })
-        if (!cancelled) setBusy(false)
-      } catch (err) {
-        if (cancelled) return
-        const msg = (err as Error)?.message || ''
-        if (msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('user')) {
-          cancelled = true
-          stop()
-          onClose()
-        } else {
-          setError(t('scanner.cameraError'))
-          onError(t('scanner.cameraError'))
-          setBusy(false)
-        }
-      }
-    }
-
-    document.body.classList.add('scanner-active')
-    start()
-
-    return () => {
-      cancelled = true
-      document.body.classList.remove('scanner-active')
-      stop()
-    }
-  }, [attempt])
-
-  const handleRetry = () => {
-    setError('')
-    onError('')
-    setBusy(true)
-    setAttempt((n) => n + 1)
-  }
-
-  return createPortal(
-    <div className='scanner-overlay'>
-      {busy && !error ? <p className='scanner-hint'>{t('scanner.pointAtQr')}</p> : null}
-      {!busy && error ? <p className='scanner-error'>{error}</p> : null}
-      {!busy && error ? (
-        <button className='btn btn-primary scanner-retry' onClick={handleRetry}>
-          {t('scanner.tryAgain')}
-        </button>
-      ) : null}
-      <button
-        className='btn btn-secondary scanner-cancel'
-        onClick={() => {
-          document.body.classList.remove('scanner-active')
-          onClose()
-        }}
-      >
-        {t('common.cancel')}
-      </button>
-    </div>,
-    document.body,
+    <ScannerMills close={close} label={label} onData={onData} onError={onError} onSwitch={handleSwitch} />
   )
 }
 
 function ScannerMills({ close, label, onData, onError, onSwitch }: ScannerProps) {
+  const { t } = useTranslation()
   const [error, setError] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
 
@@ -205,8 +64,8 @@ function ScannerMills({ close, label, onData, onError, onSwitch }: ScannerProps)
         cancel = frameLoop(() => {
           const res = camera.readFrame(canvas)
           if (res) {
+            stopScan()
             onData(res)
-            handleClose()
           }
         })
       } catch (e) {
@@ -237,18 +96,19 @@ function ScannerMills({ close, label, onData, onError, onSwitch }: ScannerProps)
       <Header auxFunc={handleSwitch} auxText='M' text={label} back={handleClose} />
       <Content>
         <Padded>
-          <ErrorMessage error={error} text='Camera not available' />
+          <ErrorMessage error={error} text={t('scanner.cameraError')} />
           <video style={videoStyle} ref={videoRef} />
         </Padded>
       </Content>
       <ButtonsOnBottom>
-        <Button onClick={handleClose} label='Cancel' />
+        <Button onClick={handleClose} label={t('common.cancel')} />
       </ButtonsOnBottom>
     </>
   )
 }
 
 function ScannerQr({ calculateScanRegion, close, label, onData, onError, onSwitch }: ScannerProps) {
+  const { t } = useTranslation()
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
 
@@ -260,8 +120,8 @@ function ScannerQr({ calculateScanRegion, close, label, onData, onError, onSwitc
     qrScanner.current = new QrScanner(
       videoRef.current,
       (result) => {
+        stopScan()
         onData(result.data)
-        handleClose()
       },
       {
         maxScansPerSecond: 100,
@@ -275,7 +135,7 @@ function ScannerQr({ calculateScanRegion, close, label, onData, onError, onSwitc
     qrScanner.current.start().catch(async () => {
       // qr-scanner throws the same 'Camera not found.' whatever went wrong,
       // so the permission is what tells us if the user blocked the camera
-      const text = cameraErrorText(await queryCameraPermission())
+      const text = cameraErrorText(await queryCameraPermission(), t)
       if (cancelled) return
       onError(text)
       setError(text)
@@ -319,8 +179,8 @@ function ScannerQr({ calculateScanRegion, close, label, onData, onError, onSwitc
         </Padded>
       </Content>
       <ButtonsOnBottom>
-        {error ? <Button onClick={handleRetry} label='Try again' /> : null}
-        <Button onClick={handleClose} label='Cancel' secondary={Boolean(error)} />
+        {error ? <Button onClick={handleRetry} label={t('scanner.tryAgain')} /> : null}
+        <Button onClick={handleClose} label={t('common.cancel')} secondary={Boolean(error)} />
       </ButtonsOnBottom>
     </>
   )
