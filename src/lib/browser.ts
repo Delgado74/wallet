@@ -33,3 +33,11 @@ export const isInAppBrowser = (): boolean => {
 
   return false
 }
+
+export const isNativePlatform = (): boolean => {
+  const capacitor = (window as any).Capacitor
+  if (capacitor && typeof capacitor.isNativePlatform === 'function') {
+    return capacitor.isNativePlatform()
+  }
+  return false
+}
