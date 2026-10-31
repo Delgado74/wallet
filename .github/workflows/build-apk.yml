@@ -2,19 +2,9 @@ name: Build Android APK
 
 on:
   workflow_dispatch:
-    inputs:
-      ref:
-        description: 'Git ref (branch/tag/sha) to build from'
-        required: true
-        default: 'feat/capacitor-android-clean'
-      build_type:
-        description: 'Build type'
-        required: true
-        default: 'debug'
-        type: choice
-        options:
-          - debug
-          - release
+  push:
+    branches:
+      - feat/capacitor-android-clean
 
 jobs:
   build:
@@ -23,8 +13,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
