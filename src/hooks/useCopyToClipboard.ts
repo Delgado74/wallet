@@ -7,7 +7,13 @@ export function useCopyToClipboard(): (value: string) => Promise<boolean> {
   const { t } = useTranslation()
 
   return async (value: string) => {
-    const copied = await copyToClipboard(value)
+    let copied = false
+    try {
+      copied = await copyToClipboard(value)
+    } catch {
+      copied = false
+    }
+    if (typeof copied !== 'boolean') copied = !!copied
     toast(copied ? t('common.copiedToClipboard') : t('common.failedToCopy'))
     return copied
   }
