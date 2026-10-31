@@ -6,7 +6,7 @@ import { dirname, resolve } from 'node:path';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const MAIN_ACTIVITY = resolve(
   ROOT,
-  'android/app/src/main/java/com/delgado74/arkade/MainActivity.java',
+  'android/app/src/main/java/com/arkade/wallet/MainActivity.java',
 );
 
 const TARGET = `package com.delgado74.arkade;
