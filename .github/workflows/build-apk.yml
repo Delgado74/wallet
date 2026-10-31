@@ -55,6 +55,14 @@ jobs:
       - name: Build web app
         run: pnpm build
 
+      - name: Copy fresh web assets to Android
+        run: |
+          rm -rf android/app/src/main/assets/public
+          mkdir -p android/app/src/main/assets
+          cp -r dist android/app/src/main/assets/public
+          echo "Copied dist to android/app/src/main/assets/public"
+          du -sh android/app/src/main/assets/public | tail -1
+
       - name: Initialize Capacitor
         run: |
           if [ -d "android" ] && [ -f "android/gradlew" ]; then
