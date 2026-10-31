@@ -9,6 +9,23 @@ export interface JSCapabilityCheck {
   errorMessage?: string
 }
 
+const isCapacitorNative = (): boolean => {
+  try {
+    const cap: any = (window as any).Capacitor
+    if (cap?.isNativePlatform?.()) return true
+    if (typeof cap?.getPlatform === 'function' && cap.getPlatform() !== 'web') return true
+  } catch {}
+  try {
+    if ((window as any).androidInterface) return true
+  } catch {}
+  try {
+    if (location.hostname === 'localhost' && /Android|iPhone|iPad|iPod/.test(navigator.userAgent)) {
+      if ((window as any).Capacitor) return true
+    }
+  } catch {}
+  return false
+}
+
 /**
  * Tests if the environment has sufficient JavaScript capabilities for the wallet to function.
  * This includes checking for:
@@ -19,6 +36,12 @@ export interface JSCapabilityCheck {
  */
 export const detectJSCapabilities = async (): Promise<JSCapabilityCheck> => {
   try {
+    // In Capacitor native apps (Android/iOS) the WebView has full capabilities
+    // and these browser restriction checks cause false negatives
+    if (isCapacitorNative()) {
+      return { isSupported: true }
+    }
+
     // Check for Web Workers support (required for the wallet service worker)
     if (!window.Worker) {
       return {
