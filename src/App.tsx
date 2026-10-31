@@ -124,7 +124,11 @@ export default function App() {
       }
     } catch {}
     try {
-      if (location.hostname === 'localhost' && /Android|iPhone|iPad|iPod/.test(navigator.userAgent) && (window as any).Capacitor) {
+      if (
+        location.hostname === 'localhost' &&
+        /Android|iPhone|iPad|iPod/.test(navigator.userAgent) &&
+        (window as any).Capacitor
+      ) {
         setIsCapable(true)
         setJsCapabilitiesChecked(true)
         return
