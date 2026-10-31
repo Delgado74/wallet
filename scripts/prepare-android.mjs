@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 
@@ -18,8 +18,11 @@ function fail(msg) {
 
 function read(path, label) {
   try {
+    if (!existsSync(path)) {
+      fail(`No se encontró ${label} en ${path}. ¿Se generó android/ con "npx cap add android"?`)
+    }
     return readFileSync(path, 'utf8')
-  } catch {
+  } catch (e) {
     fail(`No se encontró ${label} en ${path}. ¿Se generó android/ con "npx cap add android"?`)
   }
 }
@@ -49,52 +52,41 @@ function patchManifest(xml) {
   return { out, changed }
 }
 
-function patchGradle(text) {
-  const anchor = text.match(/^android\s*\{$/m)
-  if (!anchor) {
-    fail('build.gradle no contiene un bloque "android {"')
-  }
-  let out = text
-  if (!out.includes('dataBinding true')) {
-    const block =
-      '    buildFeatures {\n        dataBinding true\n    }\n    dataBinding {\n        enabled = true\n    }'
-    out = out.replace(anchor[0], `${anchor[0]}\n${block}`)
-  }
-  return { out, changed: out !== text }
-}
-
-function patchVariables(text) {
-  const m = text.match(/minSdkVersion\s*=\s*\d+/)
-  if (!m) return { out: text, changed: false }
-  if (m[0].includes(`= ${MIN_SDK}`) || m[0].includes(`=${MIN_SDK}`)) {
-    return { out: text, changed: false }
-  }
-  return { out: text.replace(m[0], m[0].replace(/\d+/, String(MIN_SDK))), changed: true }
-}
-
 const manifest = read(MANIFEST, 'AndroidManifest.xml')
 const m = patchManifest(manifest)
 if (m.changed) {
   writeFileSync(MANIFEST, m.out)
   console.log('[prepare-android] Permisos CAMERA/FLASHLIGHT y ML Kit añadidos al manifest')
 } else {
-  console.log('[prepare-android] Manifest ya configurado (idempotente)')
+  console.log('[prepare-android] Permisos y ML Kit ya presentes')
 }
 
-const gradle = read(GRADLE, 'build.gradle')
-const g = patchGradle(gradle)
-if (g.changed) {
-  writeFileSync(GRADLE, g.out)
-  console.log('[prepare-android] dataBinding habilitado en build.gradle')
-} else {
-  console.log('[prepare-android] dataBinding ya presente')
+if (existsSync(GRADLE)) {
+  try {
+    let g = readFileSync(GRADLE, 'utf8')
+    if (!g.includes('dataBinding true')) {
+      if (g.includes('buildFeatures')) {
+        g = g.replace(/buildFeatures\s*\{[^}]*\}/s, (m) => m.replace('}', '        dataBinding true\n    }'))
+      } else {
+        const anchor = g.match(/^android\s*\{$/m)
+        if (anchor) {
+          g = g.replace(anchor[0], `${anchor[0]}\n    buildFeatures {\n        dataBinding true\n    }`)
+        }
+      }
+      writeFileSync(GRADLE, g)
+      console.log('[prepare-android] dataBinding habilitado')
+    }
+  } catch {}
 }
 
-const variables = read(VARIABLES, 'variables.gradle')
-const v = patchVariables(variables)
-if (v.changed) {
-  writeFileSync(VARIABLES, v.out)
-  console.log(`[prepare-android] minSdkVersion elevado a ${MIN_SDK}`)
-} else {
-  console.log(`[prepare-android] minSdkVersion ya es ${MIN_SDK} (idempotente)`)
+if (existsSync(VARIABLES)) {
+  try {
+    let v = readFileSync(VARIABLES, 'utf8')
+    const m2 = v.match(/minSdkVersion\s*=\s*\d+/)
+    if (m2 && !m2[0].includes(`= ${MIN_SDK}`) && !m2[0].includes(`=${MIN_SDK}`)) {
+      v = v.replace(m2[0], m2[0].replace(/\d+/, String(MIN_SDK)))
+      writeFileSync(VARIABLES, v)
+      console.log('[prepare-android] minSdkVersion actualizado a 26')
+    }
+  } catch {}
 }
