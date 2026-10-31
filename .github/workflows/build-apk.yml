@@ -57,8 +57,14 @@ jobs:
 
       - name: Initialize Capacitor
         run: |
-          if [ ! -d "android" ]; then
-            npx cap add android || pnpm exec cap add android
+          if [ -d "android" ] && [ -f "android/gradlew" ]; then
+            echo "android/ with gradlew exists, skipping cap add android"
+          elif [ -d "android" ]; then
+            echo "android/ exists without gradlew, removing"
+            rm -rf android
+            pnpm exec cap add android
+          else
+            pnpm exec cap add android
           fi
 
       - name: Sync Capacitor
@@ -76,7 +82,14 @@ jobs:
           grep -q 'com.google.mlkit.vision.DEPENDENCIES' android/app/src/main/AndroidManifest.xml
 
       - name: Make gradlew executable
-        run: chmod +x android/gradlew
+        run: |
+          if [ -f android/gradlew ]; then
+            chmod +x android/gradlew
+          elif [ -f android/app/gradlew ]; then
+            chmod +x android/app/gradlew
+          else
+            find android -name gradlew -type f -exec chmod +x {} \;
+          fi
 
       - name: Build APK
         run: cd android && ./gradlew assembleDebug
@@ -84,11 +97,12 @@ jobs:
       - name: Find APK
         id: find_apk
         run: |
-          APK_PATH=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
+          APK_PATH=$(find android -name "*.apk" -type f | head -n 1)
           echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
           echo "Found APK: $APK_PATH"
 
       - name: Upload APK artifact
+        if: steps.find_apk.outputs.apk_path != ''
         uses: actions/upload-artifact@v4
         with:
           name: arkade-wallet-debug
