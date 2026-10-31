@@ -10,6 +10,8 @@ const config: CapacitorConfig = {
   },
   plugins: {
     Keyboard: {
+      // Let the native view resize so `ButtonsOnBottom` and inputs stay above
+      // the keyboard, rather than the web view scrolling under it.
       resize: KeyboardResize.Native,
       resizeOnFullScreen: true,
     },
@@ -18,9 +20,6 @@ const config: CapacitorConfig = {
       launchShowDuration: 500,
       backgroundColor: '#101010',
       androidScaleType: 'CENTER_CROP',
-    },
-    Camera: {
-      androidPermissions: ['android.permission.CAMERA'],
     },
   },
 }
