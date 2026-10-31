@@ -1,12 +1,14 @@
-import { Clipboard } from '@capacitor/clipboard'
 import { isNativePlatform } from './browser'
 import { consoleError } from './logs'
 
 export const copyToClipboard = async (text: string): Promise<void> => {
   try {
     if (isNativePlatform()) {
+      const { Clipboard } = await import('@capacitor/clipboard')
       await Clipboard.write({ string: text })
-    } else if (navigator.clipboard) {
+      return
+    }
+    if (navigator.clipboard) {
       await navigator.clipboard.writeText(text)
     }
   } catch (err) {
@@ -17,6 +19,7 @@ export const copyToClipboard = async (text: string): Promise<void> => {
 export const pasteFromClipboard = async (): Promise<string> => {
   try {
     if (isNativePlatform()) {
+      const { Clipboard } = await import('@capacitor/clipboard')
       const { value } = await Clipboard.read()
       return value ?? ''
     }
