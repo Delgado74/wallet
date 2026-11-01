@@ -58,7 +58,7 @@ jobs:
 
       - name: Initialize Capacitor
         run: |
-          if [ -d "android" ] && [ -f "android/gradlew" ] && [ -f "android/capacitor.settings.gradle" ]; then
+          if [ -d "android" ] && [ -f "android/gradlew" ] && [ -f "android/capacitor.settings.gradle" ] && [ -d "android/capacitor-cordova-android-plugins" ]; then
             echo "android/ with complete config exists, skipping cap add android"
           elif [ -d "android" ]; then
             echo "android/ exists without complete config, removing"
@@ -68,25 +68,8 @@ jobs:
             pnpm exec cap add android
           fi
 
-      - name: Ensure Capacitor Cordova variables
-        run: |
-          mkdir -p android/capacitor-cordova-android-plugins
-          if [ ! -f android/capacitor-cordova-android-plugins/cordova.variables.gradle ]; then
-            echo "ext {" > android/capacitor-cordova-android-plugins/cordova.variables.gradle
-            echo "    cdvMinSdkVersion = 26" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
-            echo "    cdvCompileSdkVersion = 35" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
-            echo "    cdvTargetSdkVersion = 35" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
-            echo "    cdvBuildToolsVersion = '35.0.0'" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
-            echo "    cdvVersionCodeFromABI = false" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
-            echo "    cdvReleaseSigningPropertiesFile = null" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
-            echo "    cdvDebugSigningPropertiesFile = null" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
-            echo "    cdvAndroidXAppCompatVersion = '1.7.0'" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
-            echo "    cdvAndroidXCoreVersion = '1.13.1'" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
-            echo "}" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
-            echo "Created cordova.variables.gradle"
-          else
-            echo "cordova.variables.gradle exists"
-          fi
+      - name: Sync Capacitor
+        run: pnpm exec cap sync android
 
       - name: Copy fresh dist directly to Android assets
         run: |
