@@ -58,8 +58,8 @@ jobs:
 
       - name: Initialize Capacitor
         run: |
-          if [ -d "android" ] && [ -f "android/gradlew" ] && [ -f "android/capacitor.settings.gradle" ]; then
-            echo "android/ with gradlew exists, skipping cap add android"
+          if [ -d "android" ] && [ -f "android/gradlew" ] && [ -f "android/capacitor.settings.gradle" ] && [ -d "android/capacitor-cordova-android-plugins" ]; then
+            echo "android/ with complete config exists, skipping cap add android"
           elif [ -d "android" ]; then
             echo "android/ exists without complete config, removing"
             rm -rf android
@@ -68,8 +68,8 @@ jobs:
             pnpm exec cap add android
           fi
 
-      - name: Sync Capacitor
-        run: pnpm exec cap sync android
+      - name: Update Capacitor plugins only
+        run: pnpm exec cap update android
 
       - name: Copy fresh dist directly to Android assets
         run: |
