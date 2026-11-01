@@ -55,14 +55,6 @@ jobs:
       - name: Build web app
         run: pnpm build
 
-      - name: Copy fresh dist to Android assets
-        run: |
-          rm -rf android/app/src/main/assets/public
-          mkdir -p android/app/src/main/assets/public
-          cp -r dist/* android/app/src/main/assets/public/
-          echo "Copied $(find android/app/src/main/assets/public -type f | wc -l) files"
-          du -sh android/app/src/main/assets/public | tail -1
-
       - name: Initialize Capacitor
         run: |
           if [ -d "android" ] && [ -f "android/gradlew" ]; then
@@ -75,16 +67,23 @@ jobs:
             pnpm exec cap add android
           fi
 
-      - name: Sync Capacitor
-        run: |
-          pnpm exec cap sync android
-
-      - name: Force copy dist again after sync
+      - name: Copy fresh dist to Android assets
         run: |
           rm -rf android/app/src/main/assets/public
           mkdir -p android/app/src/main/assets/public
           cp -r dist/* android/app/src/main/assets/public/
-          echo "Re-copied $(find android/app/src/main/assets/public -type f | wc -l) files"
+          echo "Copied $(find android/app/src/main/assets/public -type f | wc -l) files"
+          du -sh android/app/src/main/assets/public | tail -1
+
+      - name: Copy Capacitor web assets
+        run: pnpm exec cap copy android
+
+      - name: Force fresh dist again
+        run: |
+          rm -rf android/app/src/main/assets/public
+          mkdir -p android/app/src/main/assets/public
+          cp -r dist/* android/app/src/main/assets/public/
+          echo "Final copy: $(find android/app/src/main/assets/public -type f | wc -l) files"
           du -sh android/app/src/main/assets/public | tail -1
 
       - name: Prepare ServiceWorker for Capacitor
