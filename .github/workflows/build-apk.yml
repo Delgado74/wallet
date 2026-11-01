@@ -54,7 +54,20 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Build web app
-        run: pnpm build
+        run: |
+          pnpm build
+          echo "DIST: $(find dist -type f | wc -l) archivos"
+          du -sh dist
+
+      - name: Debug - estado inicial de android/ y .npmrc
+        run: |
+          echo "--- .npmrc"; cat .npmrc 2>/dev/null || echo "(no existe)"
+          echo "--- android/ trackeado en git?"
+          git ls-files android | head -30 || true
+          echo "--- contenido de android/"
+          ls -la android 2>/dev/null || echo "(android/ no existe)"
+          echo "--- webDir en capacitor.config"
+          cat capacitor.config.* 2>/dev/null || echo "(sin capacitor.config)"
 
       - name: Initialize Capacitor
         run: |
@@ -100,8 +113,24 @@ jobs:
             find android -name gradlew -type f -exec chmod +x {} \;
           fi
 
+      - name: Debug - estructura del proyecto Gradle
+        run: |
+          cd android
+          echo "--- capacitor.settings.gradle"
+          cat capacitor.settings.gradle || true
+          echo "--- comprobando rutas de cada subproyecto"
+          grep -o "File('[^']*')" capacitor.settings.gradle | sed "s/File('//;s/')//" | while read p; do
+            if [ -f "$p/build.gradle" ]; then echo "OK      $p"; else echo "MISSING $p"; fi
+          done || true
+          echo "--- capacitor-cordova-android-plugins"
+          ls -la capacitor-cordova-android-plugins || true
+          echo "--- node_modules (@capacitor, @aparajita)"
+          ls -la ../node_modules/@capacitor ../node_modules/@aparajita 2>&1 | head -40 || true
+          echo "--- versiones"
+          cat gradle/wrapper/gradle-wrapper.properties || true
+
       - name: Build APK
-        run: cd android && ./gradlew assembleDebug
+        run: cd android && ./gradlew assembleDebug --stacktrace
 
       - name: Find APK
         id: find_apk
@@ -109,6 +138,16 @@ jobs:
           APK_PATH=$(find android -name "app-debug.apk" -o -name "*.apk" | head -n 1)
           echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
           echo "Found APK: $APK_PATH"
+          ls -lh "$APK_PATH" || true
+
+      - name: Debug - comparar dist con contenido del APK
+        run: |
+          APK="${{ steps.find_apk.outputs.apk_path }}"
+          (cd dist && find . -type f | sort) > /tmp/dist.txt
+          unzip -Z1 "$APK" | grep '^assets/public/' | sed 's|^assets/public/|./|' | sort > /tmp/apk.txt
+          echo "En dist: $(wc -l < /tmp/dist.txt) | En APK: $(wc -l < /tmp/apk.txt)"
+          echo "--- Archivos de dist que NO estan en el APK:"
+          comm -23 /tmp/dist.txt /tmp/apk.txt || true
 
       - name: Upload APK artifact
         if: steps.find_apk.outputs.apk_path != ''
