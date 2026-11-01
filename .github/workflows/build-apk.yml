@@ -12,10 +12,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      VITE_ARK_SERVER: https://arkade.computer
+      VITE_LNURL_SERVER: https://arkade.computer
+      VITE_LNURL_DOMAIN: arkade.computer
 
     steps:
       - name: Checkout repository
@@ -52,22 +54,27 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Build web app
-        env:
-          VITE_ARK_SERVER: https://arkade.computer
-          VITE_LNURL_SERVER: https://arkade.computer
-          VITE_LNURL_DOMAIN: arkade.computer
         run: pnpm build
 
       - name: Initialize Capacitor
         run: |
-          if [ -d "android" ]; then
-            echo "android/ exists, skipping npx cap add android"
+          if [ -d "android" ] && [ -f "android/gradlew" ]; then
+            echo "android/ with gradlew exists, skipping cap add android"
+          elif [ -d "android" ]; then
+            echo "android/ exists without gradlew, removing"
+            rm -rf android
+            pnpm exec cap add android
           else
-            npx cap add android
+            pnpm exec cap add android
           fi
 
-      - name: Sync Capacitor
-        run: npx cap sync android
+      - name: Copy fresh dist directly to Android assets
+        run: |
+          rm -rf android/app/src/main/assets/public
+          mkdir -p android/app/src/main/assets/public
+          cp -r dist/* android/app/src/main/assets/public/
+          echo "Copied $(find android/app/src/main/assets/public -type f | wc -l) files"
+          du -sh android/app/src/main/assets/public | tail -1
 
       - name: Prepare ServiceWorker for Capacitor
         run: node scripts/prepare-service-worker.mjs
@@ -81,21 +88,28 @@ jobs:
           grep -q 'com.google.mlkit.vision.DEPENDENCIES' android/app/src/main/AndroidManifest.xml
 
       - name: Make gradlew executable
-        run: chmod +x android/gradlew
+        run: |
+          if [ -f android/gradlew ]; then
+            chmod +x android/gradlew
+          elif [ -f android/app/gradlew ]; then
+            chmod +x android/app/gradlew
+          else
+            find android -name gradlew -type f -exec chmod +x {} \;
+          fi
 
       - name: Build APK
         run: cd android && ./gradlew assembleDebug
 
       - name: Find APK
-        id: find-apk
+        id: find_apk
         run: |
-          APK_PATH=$(find android -name "*.apk" -type f | head -1)
+          APK_PATH=$(find android -name "*.apk" -type f | head -n 1)
           echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
           echo "Found APK: $APK_PATH"
 
       - name: Upload APK artifact
-        if: steps.find-apk.outputs.apk_path != ''
+        if: steps.find_apk.outputs.apk_path != ''
         uses: actions/upload-artifact@v4
         with:
-          name: arkade-wallet-apk
-          path: ${{ steps.find-apk.outputs.apk_path }}
+          name: arkade-wallet-debug
+          path: ${{ steps.find_apk.outputs.apk_path }}
