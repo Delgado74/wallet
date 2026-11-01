@@ -1,4 +1,5 @@
 import type { CapacitorConfig } from '@capacitor/cli'
+import { KeyboardResize } from '@capacitor/keyboard'
 
 const config: CapacitorConfig = {
   appId: 'money.arkade.app',
@@ -11,7 +12,7 @@ const config: CapacitorConfig = {
     Keyboard: {
       // Let the native view resize so `ButtonsOnBottom` and inputs stay above
       // the keyboard, rather than the web view scrolling under it.
-      resize: 'native' as any,
+      resize: KeyboardResize.Native,
       resizeOnFullScreen: true,
     },
     SplashScreen: {
