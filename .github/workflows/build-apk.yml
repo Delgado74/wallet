@@ -72,19 +72,17 @@ jobs:
         run: |
           mkdir -p android/capacitor-cordova-android-plugins
           if [ ! -f android/capacitor-cordova-android-plugins/cordova.variables.gradle ]; then
-            cat > android/capacitor-cordova-android-plugins/cordova.variables.gradle << 'GRADLE'
-ext {
-    cdvMinSdkVersion = project.hasProperty('minSdkVersion') ? rootProject.ext.minSdkVersion : 26
-    cdvCompileSdkVersion = project.hasProperty('compileSdkVersion') ? rootProject.ext.compileSdkVersion : 35
-    cdvTargetSdkVersion = project.hasProperty('targetSdkVersion') ? rootProject.ext.targetSdkVersion : 35
-    cdvBuildToolsVersion = project.hasProperty('buildToolsVersion') ? rootProject.ext.buildToolsVersion : '35.0.0'
-    cdvVersionCodeFromABI = false
-    cdvReleaseSigningPropertiesFile = null
-    cdvDebugSigningPropertiesFile = null
-    cdvAndroidXAppCompatVersion = '1.7.0'
-    cdvAndroidXCoreVersion = '1.13.1'
-}
-GRADLE
+            echo "ext {" > android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvMinSdkVersion = project.hasProperty('minSdkVersion') ? rootProject.ext.minSdkVersion : 26" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvCompileSdkVersion = project.hasProperty('compileSdkVersion') ? rootProject.ext.compileSdkVersion : 35" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvTargetSdkVersion = project.hasProperty('targetSdkVersion') ? rootProject.ext.targetSdkVersion : 35" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvBuildToolsVersion = project.hasProperty('buildToolsVersion') ? rootProject.ext.buildToolsVersion : '35.0.0'" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvVersionCodeFromABI = false" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvReleaseSigningPropertiesFile = null" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvDebugSigningPropertiesFile = null" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvAndroidXAppCompatVersion = '1.7.0'" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvAndroidXCoreVersion = '1.13.1'" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "}" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
             echo "Created cordova.variables.gradle"
           else
             echo "cordova.variables.gradle exists"
@@ -93,7 +91,7 @@ GRADLE
       - name: Copy fresh dist directly to Android assets
         run: |
           rm -rf android/app/src/main/assets/public
-          rm -rf android/app/src/main/assets/*
+          rm -rf android/app/src/main/assets/*.*
           mkdir -p android/app/src/main/assets/public
           cp -r dist/* android/app/src/main/assets/public/
           echo "Copied $(find android/app/src/main/assets/public -type f | wc -l) files"
