@@ -6,7 +6,7 @@ on:
       ref:
         description: 'Branch, tag or commit SHA to build from'
         required: true
-        default: 'feat/capacitor-android-clean'
+        default: 'feat/capacular-android-clean'
         type: string
 
 jobs:
@@ -59,7 +59,7 @@ jobs:
       - name: Initialize Capacitor
         run: |
           if [ -d "android" ] && [ -f "android/gradlew" ] && [ -f "android/capacitor.settings.gradle" ]; then
-            echo "android/ with gradlew exists, skipping cap add android"
+            echo "android/ with complete config exists, skipping cap add android"
           elif [ -d "android" ]; then
             echo "android/ exists without complete config, removing"
             rm -rf android
@@ -68,8 +68,25 @@ jobs:
             pnpm exec cap add android
           fi
 
-      - name: Sync Capacitor
-        run: pnpm exec cap sync android
+      - name: Ensure Capacitor Cordova variables
+        run: |
+          mkdir -p android/capacitor-cordova-android-plugins
+          if [ ! -f android/capacitor-cordova-android-plugins/cordova.variables.gradle ]; then
+            echo "ext {" > android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvMinSdkVersion = project.hasProperty('minSdkVersion') ? rootProject.ext.minSdkVersion : 26" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvCompileSdkVersion = project.hasProperty('compileSdkVersion') ? rootProject.ext.compileSdkVersion : 35" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvTargetSdkVersion = project.hasProperty('targetSdkVersion') ? rootProject.ext.targetSdkVersion : 35" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvBuildToolsVersion = project.hasProperty('buildToolsVersion') ? rootProject.ext.buildToolsVersion : '35.0.0'" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvVersionCodeFromABI = false" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvReleaseSigningPropertiesFile = null" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvDebugSigningPropertiesFile = null" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvAndroidXAppCompatVersion = '1.7.0'" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvAndroidXCoreVersion = '1.13.1'" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "}" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "Created cordova.variables.gradle"
+          else
+            echo "cordova.variables.gradle exists"
+          fi
 
       - name: Copy fresh dist directly to Android assets
         run: |
@@ -111,7 +128,7 @@ jobs:
           echo "Found APK: $APK_PATH"
 
       - name: Upload APK artifact
-        if: steps.find_apk.outputs.apk_path != ''
+        if: steps.find_app.outputs.apk_path != ''
         uses: actions/upload-artifact@v4
         with:
           name: arkade-wallet-debug
