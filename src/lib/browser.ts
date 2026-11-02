@@ -11,6 +11,13 @@ export const isAndroid = (): boolean => {
 }
 
 export const isInAppBrowser = (): boolean => {
+  try {
+    const capacitor: any = (window as any).Capacitor
+    if (capacitor?.isNativePlatform?.()) return false
+    if (typeof capacitor?.getPlatform === 'function' && capacitor.getPlatform() !== 'web') return false
+    if (capacitor?.platform && capacitor.platform !== 'web') return false
+  } catch {}
+
   const ua = navigator.userAgent || navigator.vendor || (window as any).opera || ''
 
   // Known in-app browser tokens (sorted by global user base)
