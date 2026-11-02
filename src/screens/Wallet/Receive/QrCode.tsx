@@ -144,7 +144,23 @@ export default function ReceiveQRCode() {
     (lnurlRail.status === 'onboarding' && !lnurlRail.choices.includes('self'))
   const swapRail = useSwapRail(swapRailOn)
   const lnurl = lnurlRail.lnurl ?? ''
-  const lightningAddress = lnurlRail.receiver?.lightningAddress ?? ''
+  const [fallbackLightningAddress, setFallbackLightningAddress] = useState('')
+  useEffect(() => {
+    if (lnurlRail.receiver?.lightningAddress) {
+      setFallbackLightningAddress(lnurlRail.receiver.lightningAddress)
+      return
+    }
+    const get = lnurlRail.addresses
+    if (get) {
+      get()
+        .then((list: any[]) => {
+          const addr = list?.find((a: any) => a?.status === 'active' && a?.lightningAddress)
+          if (addr?.lightningAddress) setFallbackLightningAddress(addr.lightningAddress)
+        })
+        .catch(() => {})
+    }
+  }, [lnurlRail.receiver?.lightningAddress, lnurlRail.status])
+  const lightningAddress = lnurlRail.receiver?.lightningAddress ?? fallbackLightningAddress ?? ''
   // The payment listener writes the paid amount into `satoshis`; re-quoting it would mint an invoice nobody pays.
   const requestedSats = recvInfo.received ? 0 : satoshis
   const lnurlRails = useLnurlRails(lnurlRail.receiver, requestedSats, false, {
