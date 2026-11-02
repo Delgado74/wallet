@@ -13,13 +13,16 @@ const isCapacitorNative = (): boolean => {
   try {
     const cap: any = (window as any).Capacitor
     if (cap?.isNativePlatform?.()) return true
-    if (typeof cap?.getPlatform === 'function' && cap.getPlatform() !== 'web') return true
+    if (typeof cap?.getPlatform === 'function' && cap.getPlatform && cap.getPlatform() !== 'web') return true
+    if (cap?.platform && cap.platform !== 'web') return true
   } catch {}
   try {
     if ((window as any).androidInterface) return true
   } catch {}
   try {
-    if (location.hostname === 'localhost' && /Android|iPhone|iPad|iPod/.test(navigator.userAgent)) {
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : ''
+    if ((window as any).Capacitor && (/Android/i.test(ua) || /wv/i.test(ua))) return true
+    if (location.hostname === 'localhost' && /Android|iPhone|iPad|iPod/.test(ua)) {
       if ((window as any).Capacitor) return true
     }
   } catch {}
@@ -85,6 +88,10 @@ export const detectJSCapabilities = async (): Promise<JSCapabilityCheck> => {
       isSupported: true,
     }
   } catch (error) {
+    // Be permissive in native environments to avoid false negatives
+    if (isCapacitorNative()) {
+      return { isSupported: true }
+    }
     return {
       isSupported: false,
       errorMessage: `JavaScript capabilities check failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -98,6 +105,10 @@ export const detectJSCapabilities = async (): Promise<JSCapabilityCheck> => {
  */
 const testCryptoPerformance = async (): Promise<JSCapabilityCheck> => {
   try {
+    if (isCapacitorNative()) {
+      return { isSupported: true }
+    }
+
     const startTime = performance.now()
 
     // Perform a simple but representative crypto operation
@@ -127,6 +138,9 @@ const testCryptoPerformance = async (): Promise<JSCapabilityCheck> => {
       isSupported: true,
     }
   } catch {
+    if (isCapacitorNative()) {
+      return { isSupported: true }
+    }
     return {
       isSupported: false,
       errorMessage: 'Cryptographic operations failed. Please check your browser settings.',
