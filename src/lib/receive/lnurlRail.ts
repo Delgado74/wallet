@@ -64,8 +64,22 @@ export function lnurlReceiver(deps: {
   store?: PaymentSyncStore
 }): ArkadeLnurl | undefined {
   const server = configuredLnurlServer()
-  if (!server) return undefined
-  return arkadeLnurl({ ...deps, baseUrl: server.baseUrl, domain: server.domain })
+  if (server) {
+    return arkadeLnurl({ ...deps, baseUrl: server.baseUrl, domain: server.domain })
+  }
+  try {
+    const cap: any = (window as any).Capacitor
+    if (cap?.isNativePlatform?.() || cap?.platform !== 'web' || (window as any).androidInterface) {
+      return arkadeLnurl({ ...deps, baseUrl: 'https://arkade.computer', domain: 'arkade.computer' })
+    }
+  } catch {}
+  try {
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : ''
+    if (/Android|iPhone|iPad|iPod/i.test(ua) && ((window as any).Capacitor || /wv/i.test(ua))) {
+      return arkadeLnurl({ ...deps, baseUrl: 'https://arkade.computer', domain: 'arkade.computer' })
+    }
+  } catch {}
+  return undefined
 }
 
 type PerRail = Partial<Record<LnurlRailType, string>>
