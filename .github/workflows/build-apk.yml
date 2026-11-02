@@ -6,7 +6,7 @@ on:
       ref:
         description: 'Branch, tag or commit SHA to build from'
         required: true
-        default: 'feat/capacitor-android-clean'
+        default: 'feat/capacitor-android-v2'
         type: string
 
 jobs:
@@ -54,24 +54,11 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Build web app
-        run: |
-          pnpm build
-          echo "DIST: $(find dist -type f | wc -l) archivos"
-          du -sh dist
-
-      - name: Debug - estado inicial de android/ y .npmrc
-        run: |
-          echo "--- .npmrc"; cat .npmrc 2>/dev/null || echo "(no existe)"
-          echo "--- android/ trackeado en git?"
-          git ls-files android | head -30 || true
-          echo "--- contenido de android/"
-          ls -la android 2>/dev/null || echo "(android/ no existe)"
-          echo "--- webDir en capacitor.config"
-          cat capacitor.config.* 2>/dev/null || echo "(sin capacitor.config)"
+        run: pnpm build
 
       - name: Initialize Capacitor
         run: |
-          if [ -d "android" ] && [ -f "android/gradlew" ] && [ -f "android/capacitor.settings.gradle" ] && [ -d "android/capacitor-cordova-android-plugins" ]; then
+          if [ -d "android" ] && [ -f "android/gradlew" ] && [ -f "android/capacitor.settings.gradle" ]; then
             echo "android/ with complete config exists, skipping cap add android"
           elif [ -d "android" ]; then
             echo "android/ exists without complete config, removing"
@@ -81,8 +68,25 @@ jobs:
             pnpm exec cap add android
           fi
 
-      - name: Sync Capacitor
-        run: pnpm exec cap sync android
+      - name: Ensure Capacitor Cordova variables
+        run: |
+          mkdir -p android/capacitor-cordova-android-plugins
+          if [ ! -f android/capacitor-cordova-android-plugins/cordova.variables.gradle ]; then
+            echo "ext {" > android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvMinSdkVersion = 26" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvCompileSdkVersion = 35" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvTargetSdkVersion = 35" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvBuildToolsVersion = '35.0.0'" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvVersionCodeFromABI = false" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvReleaseSigningPropertiesFile = null" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvDebugSigningPropertiesFile = null" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvAndroidXAppCompatVersion = '1.7.0'" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "    cdvAndroidXCoreVersion = '1.13.1'" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "}" >> android/capacitor-cordova-android-plugins/cordova.variables.gradle
+            echo "Created cordova.variables.gradle"
+          else
+            echo "cordova.variables.gradle exists"
+          fi
 
       - name: Copy fresh dist directly to Android assets
         run: |
@@ -113,24 +117,8 @@ jobs:
             find android -name gradlew -type f -exec chmod +x {} \;
           fi
 
-      - name: Debug - estructura del proyecto Gradle
-        run: |
-          cd android
-          echo "--- capacitor.settings.gradle"
-          cat capacitor.settings.gradle || true
-          echo "--- comprobando rutas de cada subproyecto"
-          grep -o "File('[^']*')" capacitor.settings.gradle | sed "s/File('//;s/')//" | while read p; do
-            if [ -f "$p/build.gradle" ]; then echo "OK      $p"; else echo "MISSING $p"; fi
-          done || true
-          echo "--- capacitor-cordova-android-plugins"
-          ls -la capacitor-cordova-android-plugins || true
-          echo "--- node_modules (@capacitor, @aparajita)"
-          ls -la ../node_modules/@capacitor ../node_modules/@aparajita 2>&1 | head -40 || true
-          echo "--- versiones"
-          cat gradle/wrapper/gradle-wrapper.properties || true
-
       - name: Build APK
-        run: cd android && ./gradlew assembleDebug --stacktrace
+        run: cd android && ./gradlew assembleDebug
 
       - name: Find APK
         id: find_apk
@@ -138,16 +126,6 @@ jobs:
           APK_PATH=$(find android -name "app-debug.apk" -o -name "*.apk" | head -n 1)
           echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
           echo "Found APK: $APK_PATH"
-          ls -lh "$APK_PATH" || true
-
-      - name: Debug - comparar dist con contenido del APK
-        run: |
-          APK="${{ steps.find_apk.outputs.apk_path }}"
-          (cd dist && find . -type f | sort) > /tmp/dist.txt
-          unzip -Z1 "$APK" | grep '^assets/public/' | sed 's|^assets/public/|./|' | sort > /tmp/apk.txt
-          echo "En dist: $(wc -l < /tmp/dist.txt) | En APK: $(wc -l < /tmp/apk.txt)"
-          echo "--- Archivos de dist que NO estan en el APK:"
-          comm -23 /tmp/dist.txt /tmp/apk.txt || true
 
       - name: Upload APK artifact
         if: steps.find_apk.outputs.apk_path != ''
