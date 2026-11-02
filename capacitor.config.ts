@@ -1,9 +1,25 @@
-import type { CapacitorConfig } from '@capacitor/cli';
+import type { CapacitorConfig } from '@capacitor/cli'
+import { KeyboardResize } from '@capacitor/keyboard'
 
 const config: CapacitorConfig = {
   appId: 'money.arkade.app',
   appName: 'Arkade Wallet',
-  webDir: 'dist'
-};
+  webDir: 'dist',
+  server: {
+    androidScheme: 'https',
+  },
+  plugins: {
+    Keyboard: {
+      resize: KeyboardResize.Native,
+      resizeOnFullScreen: true,
+    },
+    SplashScreen: {
+      launchAutoHide: true,
+      launchShowDuration: 500,
+      backgroundColor: '#101010',
+      androidScaleType: 'CENTER_CROP',
+    },
+  },
+}
 
-export default config;
+export default config
