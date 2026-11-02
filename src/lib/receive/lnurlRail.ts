@@ -35,7 +35,15 @@ export { lnurlRailLimits, type LnurlRailType } from '@arkade-os/lnurl-client/ark
  * API host, which is the unusual case.
  */
 export const configuredLnurlServer = () => {
-  const baseUrl = fromRuntimeEnv(import.meta.env.VITE_LNURL_SERVER?.trim())?.replace(/\/+$/, '')
+  let baseUrl = fromRuntimeEnv(import.meta.env.VITE_LNURL_SERVER?.trim())?.replace(/\/+$/, '')
+  if (!baseUrl) {
+    try {
+      const cap: any = (window as any).Capacitor
+      if (cap?.isNativePlatform?.() || (window as any).androidInterface) {
+        baseUrl = 'https://arkade.computer'
+      }
+    } catch {}
+  }
   if (!baseUrl) return undefined
   try {
     const domain = (
