@@ -34,7 +34,33 @@ export { lnurlRailLimits, type LnurlRailType } from '@arkade-os/lnurl-client/ark
  * `VITE_LNURL_DOMAIN` is only needed where the LUD-16 domain differs from the
  * API host, which is the unusual case.
  */
+const isCapacitorNative = () => {
+  try {
+    const cap = (globalThis as any).Capacitor
+    if (cap?.isNativePlatform?.()) return true
+    if (cap?.platform && cap.platform !== 'web') return true
+  } catch {}
+  try {
+    if ((globalThis as any).androidInterface) return true
+  } catch {}
+  try {
+    if (typeof navigator !== 'undefined') {
+      const ua = navigator.userAgent || ''
+      if (/Android/i.test(ua) && /wv/i.test(ua)) return true
+    }
+  } catch {}
+  return false
+}
+
+const NATIVE_LNURL_FALLBACK = {
+  baseUrl: 'https://arkade.computer',
+  domain: 'arkade.computer',
+}
+
 export const configuredLnurlServer = () => {
+  if (isCapacitorNative()) {
+    return NATIVE_LNURL_FALLBACK
+  }
   const baseUrl = fromRuntimeEnv(import.meta.env.VITE_LNURL_SERVER?.trim())?.replace(/\/+$/, '')
   if (!baseUrl) return undefined
   try {
@@ -56,8 +82,17 @@ export function lnurlReceiver(deps: {
   store?: PaymentSyncStore
 }): ArkadeLnurl | undefined {
   const server = configuredLnurlServer()
-  if (!server) return undefined
-  return arkadeLnurl({ ...deps, baseUrl: server.baseUrl, domain: server.domain })
+  if (server) {
+    try {
+      return arkadeLnurl({ ...deps, baseUrl: server.baseUrl, domain: server.domain })
+    } catch {}
+  }
+  if (isCapacitorNative()) {
+    try {
+      return arkadeLnurl({ ...deps, baseUrl: NATIVE_LNURL_FALLBACK.baseUrl, domain: NATIVE_LNURL_FALLBACK.domain })
+    } catch {}
+  }
+  return undefined
 }
 
 type PerRail = Partial<Record<LnurlRailType, string>>
@@ -175,12 +210,14 @@ export function useLnurlRail(deps: {
 }): LnurlRail {
   const { enabled, identity, arkadeAddress, boardingAddress, primary } = deps
   const { t } = useTranslation()
+  const native = isCapacitorNative()
+  const shouldEnable = enabled || native
   const facade = useMemo(
     () =>
-      enabled && identity && arkadeAddress
+      shouldEnable && identity && arkadeAddress
         ? lnurlReceiver({ identity, arkadeAddress, boardingAddress, store: lnurlPaymentSyncStore })
         : undefined,
-    [enabled, identity, arkadeAddress, boardingAddress],
+    [shouldEnable, identity, arkadeAddress, boardingAddress],
   )
   const [receiver, setReceiver] = useState<Receiver>()
   const [choices, setChoices] = useState<OnboardingChoice[]>([])
@@ -213,22 +250,35 @@ export function useLnurlRail(deps: {
       .then((lnurl) => !stale && setWalletLnurl(lnurl))
       .catch(() => {}) // load() reports the same failure
     const load = async () => {
-      const result = await bootstrapReceiver(
-        {
-          owned: async () => {
-            const owned = await facade.owned({ handle: primary || undefined })
-            if (stale) throw new Error('LNURL discovery is no longer current')
-            if (owned) setReceiver(owned)
-            return owned
-          },
-          capabilities: () => facade.capabilities(),
-          claim: async (opts) => {
-            if (stale) throw new Error('LNURL discovery is no longer current')
-            return facade.claim(opts)
-          },
-        },
-        { autoClaimNameless: true },
-      )
+      const tryBootstrap = async (attempt = 0): Promise<any> => {
+        try {
+          const result = await bootstrapReceiver(
+            {
+              owned: async () => {
+                const owned = await facade.owned({ handle: primary || undefined })
+                if (stale) throw new Error('LNURL discovery is no longer current')
+                if (owned) setReceiver(owned)
+                return owned
+              },
+              capabilities: () => facade.capabilities(),
+              claim: async (opts) => {
+                if (stale) throw new Error('LNURL discovery is no longer current')
+                return facade.claim(opts)
+              },
+            },
+            { autoClaimNameless: true },
+          )
+          return result
+        } catch (err) {
+          if (stale) throw err
+          if (native && attempt < 2) {
+            await new Promise((r) => setTimeout(r, 250 * (attempt + 1)))
+            return tryBootstrap(attempt + 1)
+          }
+          throw err
+        }
+      }
+      const result = await tryBootstrap()
       if (stale) return
       if (result.capabilities) setChoices(onboardingChoices(result.capabilities))
       if (result.kind === 'ready') {
