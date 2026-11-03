@@ -129,19 +129,42 @@ export default function ReceiveQRCode() {
       })
   }, [svcWallet])
 
+  const isCapacitorNative = () => {
+    try {
+      const cap = (globalThis as any).Capacitor
+      if (cap?.isNativePlatform?.()) return true
+      if (cap?.platform && cap.platform !== 'web') return true
+    } catch {}
+    try {
+      if ((globalThis as any).androidInterface) return true
+    } catch {}
+    try {
+      if (typeof navigator !== 'undefined') {
+        const ua = navigator.userAgent || ''
+        if (/Android/i.test(ua) && /wv/i.test(ua)) return true
+      }
+    } catch {}
+    return false
+  }
+
   // A pending Receive-screen claim must not leave a swap invoice taking the QR's lightning= from the LNURL.
-  const lnurlConfigured = Boolean(configuredLnurlServer())
+  const nativeReceive = isCapacitorNative()
+  const lnurlConfigured = nativeReceive || Boolean(configuredLnurlServer())
   const lnurlRail = useLnurlRail({
-    enabled: lnurlConfigured && !isAssetReceive,
+    enabled: (lnurlConfigured || nativeReceive) && !isAssetReceive,
     identity: svcWallet?.identity,
     arkadeAddress: recvInfo.offchainAddr,
     boardingAddress: recvInfo.boardingAddr || undefined,
     primary: config.lnurlPrimary,
   })
   const swapRailOn =
-    !lnurlConfigured ||
-    lnurlRail.status === 'failed' ||
-    (lnurlRail.status === 'onboarding' && !lnurlRail.choices.includes('self'))
+    !lnurlConfigured && !nativeReceive
+      ? true
+      : lnurlRail.status === 'failed'
+        ? true
+        : lnurlRail.status === 'onboarding' && !lnurlRail.choices.includes('self')
+          ? true
+          : false
   const swapRail = useSwapRail(swapRailOn)
   const lnurl = lnurlRail.lnurl ?? ''
   const lightningAddress = lnurlRail.receiver?.lightningAddress ?? ''
@@ -158,7 +181,10 @@ export default function ReceiveQRCode() {
     selectedMethod.startsWith(TOKEN) ? selectedMethod.slice(TOKEN.length) : undefined,
   )
   // A swap invoice left in the flow by an earlier visit isn't this rail's while the LNURL serves Lightning.
-  const invoice = (swapRailOn ? recvInfo.invoice : undefined) || lnurlRails.targets.lightning || ''
+  const invoice =
+    (!swapRailOn ? lnurlRails.targets.lightning || recvInfo.invoice : recvInfo.invoice) ||
+    lnurlRails.targets.lightning ||
+    ''
   const generatingInvoice = swapRail.generatingInvoice || lnurlRails.generating
   const createBip21 = (): { ark: string; btc: string; bip21: string } => {
     const ark = vtxoTxsAllowed() ? recvInfo.offchainAddr : ''

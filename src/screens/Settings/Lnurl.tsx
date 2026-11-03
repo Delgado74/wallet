@@ -28,6 +28,24 @@ import { NameForm } from '../Wallet/Receive/LnurlRail'
 import type { AddressListEntry } from '@arkade-os/lnurl-client'
 import type { NameOptions } from '@arkade-os/lnurl-client/arkade'
 
+const isCapacitorNative = () => {
+  try {
+    const cap = (globalThis as any).Capacitor
+    if (cap?.isNativePlatform?.()) return true
+    if (cap?.platform && cap.platform !== 'web') return true
+  } catch {}
+  try {
+    if ((globalThis as any).androidInterface) return true
+  } catch {}
+  try {
+    if (typeof navigator !== 'undefined') {
+      const ua = navigator.userAgent || ''
+      if (/Android/i.test(ua) && /wv/i.test(ua)) return true
+    }
+  } catch {}
+  return false
+}
+
 // Kept in announcementsSeen: the explainer is a one-time notice, shown before the first opt-in only.
 export const TOKEN_EXPLAINER = 'token rails explainer'
 
@@ -36,7 +54,9 @@ export default function Lnurl() {
   const { config } = useContext(ConfigContext)
   const { svcWallet } = useContext(WalletContext)
   const { t } = useTranslation()
-  const server = configuredLnurlServer()
+  const native = isCapacitorNative()
+  const server =
+    configuredLnurlServer() || (native ? { baseUrl: 'https://arkade.computer', domain: 'arkade.computer' } : undefined)
   const [addresses, setAddresses] = useState<{ arkade: string; boarding?: string }>()
   const [limits, setLimits] = useState<ReturnType<typeof lnurlRailLimits>>([])
   const [limitsError, setLimitsError] = useState('')
@@ -58,7 +78,7 @@ export default function Lnurl() {
   }, [svcWallet])
 
   const rail = useLnurlRail({
-    enabled: Boolean(server),
+    enabled: native || Boolean(server),
     identity: svcWallet?.identity,
     arkadeAddress: addresses?.arkade,
     boardingAddress: addresses?.boarding,
