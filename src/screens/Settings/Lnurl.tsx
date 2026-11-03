@@ -18,6 +18,7 @@ import {
   lnurlRailLimits,
   useLnurlRail,
   type OnboardingChoice,
+  lnurlReceiver,
 } from '../../lib/receive/lnurlRail'
 import { lnurlTokenRails, type LnurlTokenRail } from '../../lib/receive/lnurlTokenRails'
 import { prettyNumber } from '../../lib/format'
@@ -65,6 +66,31 @@ export default function Lnurl() {
   const [claiming, setClaiming] = useState(false)
   const [owned, setOwned] = useState<AddressListEntry[]>([])
   const [addressesError, setAddressesError] = useState('')
+  const [directOwned, setDirectOwned] = useState<AddressListEntry[]>([])
+
+  useEffect(() => {
+    if (!native) return
+    if (!svcWallet?.identity || !addresses?.arkade) return
+    let stale = false
+    const run = async () => {
+      try {
+        const f = lnurlReceiver({
+          identity: svcWallet.identity,
+          arkadeAddress: addresses.arkade,
+          boardingAddress: addresses.boarding,
+        })
+        if (!f) return
+        const all = await (f as any).addresses().catch(() => [])
+        if (!stale && Array.isArray(all) && all.length) setDirectOwned(all as any)
+      } catch {}
+    }
+    run()
+    const id = setInterval(run, 1500)
+    return () => {
+      stale = true
+      clearInterval(id)
+    }
+  }, [native, svcWallet?.identity, addresses?.arkade, addresses?.boarding])
 
   useEffect(() => {
     if (!svcWallet) return
@@ -122,8 +148,9 @@ export default function Lnurl() {
   }
   // The wallet-id LNURL (sessionLnurl) is an address in its own right, beside any names.
   // The server's list may lag a registration made this second; the held receiver is always one of them.
-  const listed = owned.length
-    ? owned.map((a) => ({ address: a.lightningAddress, lnurl: a.sessionLnurl }))
+  const ownedList = owned.length ? owned : directOwned
+  const listed = ownedList.length
+    ? ownedList.map((a) => ({ address: a.lightningAddress, lnurl: a.sessionLnurl }))
     : rail.receiver
       ? [{ address: rail.receiver.lightningAddress ?? null, lnurl: rail.receiver.lnurl }]
       : []
@@ -136,7 +163,7 @@ export default function Lnurl() {
     ),
     ...(server ? [[t('settings.lnurlServer'), server.domain] as [string, string]] : []),
   ]
-  const named = Boolean(rail.receiver?.lightningAddress)
+  const named = Boolean(rail.receiver?.lightningAddress || ownedList.some((a) => a.lightningAddress))
   // A wallet that holds a name may still choose another, but never gets a random one.
   const namingChoices = named ? [] : rail.choices.filter((c) => c !== 'session' && !(c === 'random' && rail.ownsName))
   const naming = namingChoices.length > 0 && rail.status !== 'failed'
@@ -148,7 +175,7 @@ export default function Lnurl() {
     // A further address is what the user just asked for, so it becomes the one the wallet receives on.
     if (claimed && named) backupAndUpdateConfig({ ...config, lnurlPrimary: claimed.handle })
   }
-  const active = owned.filter((a) => a.status === 'active')
+  const active = ownedList.filter((a) => a.status === 'active')
   const sendable: TableData = limits.map(({ type, min, max }) => [
     railLabels[type] ?? type,
     `${prettyNumber(min, 0)} – ${prettyNumber(max, 0)} sats`,

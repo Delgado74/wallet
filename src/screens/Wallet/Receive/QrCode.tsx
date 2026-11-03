@@ -43,7 +43,7 @@ import { AspContext } from '../../../providers/asp'
 import { AssetsContext } from '../../../providers/assets'
 import { useSwapRail } from '../../../lib/receive/swapRail'
 import SwapRailStatus from './SwapRail'
-import { configuredLnurlServer, useLnurlRail, useLnurlRails } from '../../../lib/receive/lnurlRail'
+import { configuredLnurlServer, useLnurlRail, useLnurlRails, lnurlReceiver } from '../../../lib/receive/lnurlRail'
 import { useLnurlTokenRails, type LnurlTokenQuote, type LnurlTokenRail } from '../../../lib/receive/lnurlTokenRails'
 import LnurlRailPanel from './LnurlRail'
 import { useTranslation } from '../../../providers/language'
@@ -167,7 +167,44 @@ export default function ReceiveQRCode() {
           : false
   const swapRail = useSwapRail(swapRailOn)
   const lnurl = lnurlRail.lnurl ?? ''
-  const lightningAddress = lnurlRail.receiver?.lightningAddress ?? ''
+  const [nativeLnAddress, setNativeLnAddress] = useState('')
+  useEffect(() => {
+    if (!nativeReceive) return
+    if (nativeLnAddress) return
+    if (!svcWallet?.identity || !recvInfo.offchainAddr) return
+    let stale = false
+    let tries = 0
+    const run = async () => {
+      tries++
+      try {
+        const f = lnurlReceiver({
+          identity: svcWallet.identity,
+          arkadeAddress: recvInfo.offchainAddr,
+          boardingAddress: recvInfo.boardingAddr || undefined,
+        })
+        if (!f) return
+        const owned = await (f as any).owned({ refresh: true }).catch(() => undefined)
+        if (!stale && owned?.lightningAddress) {
+          setNativeLnAddress(owned.lightningAddress)
+          return
+        }
+        const all = await (f as any).addresses().catch(() => [])
+        if (!stale && Array.isArray(all)) {
+          const active = all.find((a: any) => a?.status === 'active' && a?.lightningAddress)
+          if (active?.lightningAddress) {
+            setNativeLnAddress(active.lightningAddress)
+            return
+          }
+        }
+        if (tries < 10 && !stale) setTimeout(run, 600)
+      } catch {}
+    }
+    run()
+    return () => {
+      stale = true
+    }
+  }, [nativeReceive, nativeLnAddress, svcWallet?.identity, recvInfo.offchainAddr, recvInfo.boardingAddr])
+  const lightningAddress = lnurlRail.receiver?.lightningAddress ?? nativeLnAddress ?? ''
   // The payment listener writes the paid amount into `satoshis`; re-quoting it would mint an invoice nobody pays.
   const requestedSats = recvInfo.received ? 0 : satoshis
   const lnurlRails = useLnurlRails(lnurlRail.receiver, requestedSats, false, {

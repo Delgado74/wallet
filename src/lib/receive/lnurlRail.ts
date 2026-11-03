@@ -214,10 +214,10 @@ export function useLnurlRail(deps: {
   const shouldEnable = enabled || native
   const facade = useMemo(
     () =>
-      shouldEnable && identity && arkadeAddress
+      (shouldEnable || (native && identity && arkadeAddress)) && identity && arkadeAddress
         ? lnurlReceiver({ identity, arkadeAddress, boardingAddress, store: lnurlPaymentSyncStore })
         : undefined,
-    [shouldEnable, identity, arkadeAddress, boardingAddress],
+    [shouldEnable, native, identity, arkadeAddress, boardingAddress],
   )
   const [receiver, setReceiver] = useState<Receiver>()
   const [choices, setChoices] = useState<OnboardingChoice[]>([])
@@ -233,6 +233,33 @@ export function useLnurlRail(deps: {
     current.current = facade
     currentTranslation.current = t
   }, [facade, t])
+
+  useEffect(() => {
+    if (!native || !facade || !identity) return
+    let stale = false
+    const run = async () => {
+      try {
+        const owned = await (facade as any).owned({ handle: primary || undefined, refresh: true })
+        if (stale || !owned) return
+        setReceiver((prev: any) => prev || owned)
+      } catch {}
+      try {
+        const all = await (facade as any).addresses()
+        if (stale || !Array.isArray(all) || all.length === 0) return
+        const active = all.find((a: any) => a?.status === 'active' && a?.lightningAddress)
+        if (!active) return
+        const got = await (facade as any).owned({ handle: active.handle, refresh: true })
+        if (!stale && got) setReceiver((prev: any) => prev || got)
+      } catch {}
+    }
+    run()
+    const id = setInterval(run, 2000)
+    return () => {
+      stale = true
+      clearInterval(id)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [native, facade, identity, primary])
 
   useEffect(() => {
     setReceiver(undefined)
