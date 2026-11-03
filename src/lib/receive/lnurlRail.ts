@@ -23,6 +23,23 @@ import { extractError } from '../error'
 import { fromRuntimeEnv } from '../constants'
 import { lnurlPaymentSyncStore } from '../lnurlPaymentRepository'
 
+const isNative = () => {
+  try {
+    const cap: any = (window as any).Capacitor
+    if (cap?.isNativePlatform?.()) return true
+    if (typeof cap?.getPlatform === 'function' && cap.getPlatform() !== 'web') return true
+    if (cap?.platform && cap.platform !== 'web') return true
+  } catch {}
+  try {
+    if ((window as any).androidInterface) return true
+  } catch {}
+  try {
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : ''
+    if (/Android|iPhone|iPad|iPod/i.test(ua) && ((window as any).Capacitor || /wv/i.test(ua))) return true
+  } catch {}
+  return false
+}
+
 export { lnurlRailLimits, type LnurlRailType } from '@arkade-os/lnurl-client/arkade'
 
 /**
@@ -197,12 +214,14 @@ export function useLnurlRail(deps: {
 }): LnurlRail {
   const { enabled, identity, arkadeAddress, boardingAddress, primary } = deps
   const { t } = useTranslation()
+  const native = isNative()
+  const effectiveEnabled = enabled || (native && !!identity && !!arkadeAddress)
   const facade = useMemo(
     () =>
-      enabled && identity && arkadeAddress
+      effectiveEnabled && identity && arkadeAddress
         ? lnurlReceiver({ identity, arkadeAddress, boardingAddress, store: lnurlPaymentSyncStore })
         : undefined,
-    [enabled, identity, arkadeAddress, boardingAddress],
+    [effectiveEnabled, identity, arkadeAddress, boardingAddress],
   )
   const [receiver, setReceiver] = useState<Receiver>()
   const [choices, setChoices] = useState<OnboardingChoice[]>([])
