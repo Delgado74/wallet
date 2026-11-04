@@ -75,6 +75,12 @@ If a script differs, inspect `package.json` and use the exact available command.
 - Prefer deterministic, scriptable steps over manual one-off setup.
 - Record assumptions in PR/patch notes when environment parity is incomplete.
 
+## Android Build
+
+- The `android/` Capacitor project is committed source; generated files (`capacitor.settings.gradle`, `app/capacitor.build.gradle`, `capacitor-cordova-android-plugins/`, copied web assets) are recreated by `pnpm exec cap sync android`.
+- Local APK build: `pnpm build && pnpm exec cap sync android && (cd android && ./gradlew assembleDebug)` with JDK 21.
+- CI: `.github/workflows/android.yml` builds and uploads the debug APK. It runs on `master`, `next`, `feat/**`, and pull requests.
+
 ## Workflow For Agents
 
 1. Read the request and inspect only relevant files.
