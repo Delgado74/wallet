@@ -12,6 +12,7 @@ import {
   type Receiver,
 } from '@arkade-os/lnurl-client/arkade'
 import {
+  createLnurlClient,
   LnurlError,
   type AddressListEntry,
   type DomainCapabilities,
@@ -22,7 +23,7 @@ import { consoleError } from '../logs'
 import { extractError } from '../error'
 import { fromRuntimeEnv } from '../constants'
 import { lnurlPaymentSyncStore } from '../lnurlPaymentRepository'
-import { lnurlNativeAddresses, lnurlNativeOwned, lnurlNativeSessionLnurl } from '../lnurlNative'
+import { isNativeBridgeAvailable, nativeFetch } from '../lnurlNative'
 
 export { lnurlRailLimits, type LnurlRailType } from '@arkade-os/lnurl-client/arkade'
 
@@ -58,7 +59,13 @@ export function lnurlReceiver(deps: {
 }): ArkadeLnurl | undefined {
   const server = configuredLnurlServer()
   if (!server) return undefined
-  return arkadeLnurl({ ...deps, baseUrl: server.baseUrl, domain: server.domain })
+  // Native shells get OkHttp for every client call, so the LNURL protocol
+  // (endpoints, bearer tokens, parsing) stays in this one TypeScript client.
+  const client = createLnurlClient({
+    baseUrl: server.baseUrl,
+    ...(isNativeBridgeAvailable() ? { fetchImpl: nativeFetch } : {}),
+  })
+  return arkadeLnurl({ ...deps, baseUrl: server.baseUrl, domain: server.domain, client })
 }
 
 type PerRail = Partial<Record<LnurlRailType, string>>
@@ -176,17 +183,16 @@ export function useLnurlRail(deps: {
 }): LnurlRail {
   const { enabled, identity, arkadeAddress, boardingAddress, primary } = deps
   const { t } = useTranslation()
-  const native = isCapacitorNative()
   const facade = useMemo(
     () =>
-      !native && enabled && identity && arkadeAddress
+      enabled && identity && arkadeAddress
         ? lnurlReceiver({ identity, arkadeAddress, boardingAddress, store: lnurlPaymentSyncStore })
         : undefined,
-    [native, enabled, identity, arkadeAddress, boardingAddress],
+    [enabled, identity, arkadeAddress, boardingAddress],
   )
   const [receiver, setReceiver] = useState<Receiver>()
   const [choices, setChoices] = useState<OnboardingChoice[]>([])
-  const [loadedFor, setLoadedFor] = useState<ArkadeLnurl | undefined>(native ? ({} as any) : undefined)
+  const [loadedFor, setLoadedFor] = useState<ArkadeLnurl | undefined>()
   const [loadFailed, setLoadFailed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -198,100 +204,6 @@ export function useLnurlRail(deps: {
     current.current = facade
     currentTranslation.current = t
   }, [facade, t])
-
-  useEffect(() => {
-    if (native && identity && arkadeAddress) {
-      let stale = false
-      const makeReceiver = (r: any): Receiver => {
-        const recv: any = { ...r }
-        if (!recv.sync) recv.sync = () => Promise.resolve()
-        if (!recv.upgrade) recv.upgrade = () => Promise.resolve()
-        if (!recv.claim) recv.claim = () => Promise.resolve(recv)
-        if (!recv.owned) recv.owned = () => Promise.resolve(recv)
-        if (!recv.addresses) recv.addresses = async () => []
-        if (!recv.payRequest) recv.payRequest = async () => ({})
-        if (!recv.lnurl && recv.sessionLnurl) recv.lnurl = recv.sessionLnurl
-        if (!recv.lightningAddress && recv.address) recv.lightningAddress = recv.address
-        return recv as Receiver
-      }
-      const run = async () => {
-        try {
-          try {
-            const resSession = await lnurlNativeSessionLnurl({ identity, arkadeAddress, boardingAddress })
-            if (!stale && (resSession as any)?.lnurl) setWalletLnurl((resSession as any).lnurl)
-          } catch {}
-          try {
-            const res = await lnurlNativeOwned({
-              identity,
-              arkadeAddress,
-              boardingAddress,
-              handle: primary || undefined,
-              refresh: true,
-            })
-            if (!stale && (res as any)?.receiver) {
-              const r = (res as any).receiver
-              if (r.lightningAddress || r.lnurl || r.handle || r.sessionLnurl) {
-                setReceiver(makeReceiver(r))
-                setChoices([])
-                setLoadFailed(false)
-                return
-              }
-            }
-          } catch {}
-          try {
-            const res2 = await lnurlNativeAddresses({ identity, arkadeAddress, boardingAddress })
-            if (!stale && Array.isArray((res2 as any)?.addresses) && (res2 as any).addresses.length > 0) {
-              const all = (res2 as any).addresses
-              const active =
-                all.find((a: any) => a?.status === 'active' && a?.lightningAddress) ||
-                all.find((a: any) => a?.lightningAddress) ||
-                all[0]
-              if (active?.lightningAddress || active?.lnurl || active?.sessionLnurl) {
-                setReceiver(makeReceiver(active))
-                setChoices([])
-                setLoadFailed(false)
-                return
-              }
-              if (active?.handle) {
-                const res3 = await lnurlNativeOwned({
-                  identity,
-                  arkadeAddress,
-                  boardingAddress,
-                  handle: active.handle,
-                  refresh: true,
-                })
-                if (!stale && (res3 as any)?.receiver) {
-                  setReceiver(makeReceiver((res3 as any).receiver))
-                  setChoices([])
-                  setLoadFailed(false)
-                  return
-                }
-              }
-            }
-          } catch {}
-          try {
-            const res4 = await lnurlNativeOwned({ identity, arkadeAddress, boardingAddress, refresh: true })
-            if (!stale && (res4 as any)?.receiver) {
-              const r = (res4 as any).receiver
-              if (r.lightningAddress || r.lnurl || r.sessionLnurl) {
-                setReceiver(makeReceiver(r))
-                setChoices([])
-                setLoadFailed(false)
-                return
-              }
-            }
-          } catch {}
-        } catch {}
-      }
-      run()
-      const id = setInterval(run, 1000)
-      return () => {
-        stale = true
-        clearInterval(id)
-      }
-    }
-    return
-  }, [native, identity, arkadeAddress, boardingAddress, primary])
 
   useEffect(() => {
     setReceiver(undefined)
@@ -401,21 +313,15 @@ export function useLnurlRail(deps: {
     }
   }
 
-  const status: LnurlRail['status'] = native
-    ? receiver
-      ? 'ready'
+  const status: LnurlRail['status'] = !facade
+    ? 'off'
+    : loadedFor !== facade
+      ? 'loading'
       : loadFailed
         ? 'failed'
-        : 'loading'
-    : !facade
-      ? 'off'
-      : loadedFor !== facade
-        ? 'loading'
-        : loadFailed
-          ? 'failed'
-          : receiver
-            ? 'ready'
-            : 'onboarding'
+        : receiver
+          ? 'ready'
+          : 'onboarding'
 
   return {
     status,

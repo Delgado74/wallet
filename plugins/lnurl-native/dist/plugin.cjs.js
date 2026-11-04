@@ -7,17 +7,8 @@ const LnurlNative = core.registerPlugin('LnurlNative', {
 });
 
 class LnurlNativeWeb extends core.WebPlugin {
-    async owned() {
-        return { error: 'not available on web' };
-    }
-    async addresses() {
-        return { error: 'not available on web' };
-    }
-    async sessionLnurl() {
-        return { error: 'not available on web' };
-    }
-    async capabilities() {
-        return { error: 'not available on web' };
+    async request(_options) {
+        throw new Error('native HTTP bridge is not available on web');
     }
 }
 

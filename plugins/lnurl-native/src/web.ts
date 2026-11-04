@@ -1,17 +1,8 @@
 import { WebPlugin } from '@capacitor/core'
-import type { LnurlNativePlugin } from './definitions'
+import type { LnurlNativePlugin, NativeHttpRequest, NativeHttpResponse } from './definitions'
 
 export class LnurlNativeWeb extends WebPlugin implements LnurlNativePlugin {
-  async owned(): Promise<{ receiver: any } | { error: string }> {
-    return { error: 'not available on web' }
-  }
-  async addresses(): Promise<{ addresses: any[] } | { error: string }> {
-    return { error: 'not available on web' }
-  }
-  async sessionLnurl(): Promise<{ lnurl: string } | { error: string }> {
-    return { error: 'not available on web' }
-  }
-  async capabilities(): Promise<{ capabilities: any } | { error: string }> {
-    return { error: 'not available on web' }
+  async request(_options: NativeHttpRequest): Promise<NativeHttpResponse> {
+    throw new Error('native HTTP bridge is not available on web')
   }
 }

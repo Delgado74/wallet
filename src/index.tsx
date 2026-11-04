@@ -25,6 +25,9 @@ import { AssetsProvider } from './providers/assets'
 import { BackupProvider } from './providers/backup'
 import { LanguageProvider } from './providers/language'
 import { reloadOnWorkerTakeover } from './lib/serviceWorkerTakeover'
+import { installNativeLnurlFetch } from './lib/lnurlNative'
+
+installNativeLnurlFetch()
 
 // On takeover, not on updatefound: a page reloaded while the new worker still installs boots against the
 // old one, which skipWaiting then retires mid-init, leaving "Connecting to service worker" for the 30s timeout.

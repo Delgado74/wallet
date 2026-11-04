@@ -30,7 +30,7 @@
   },
   "capacitor": {
     "android": {
-      "src": "android/src/main"
+      "src": "android"
     }
   }
 }

@@ -1,24 +1,5 @@
 import { WebPlugin } from '@capacitor/core';
-import type { LnurlNativePlugin } from './definitions';
+import type { LnurlNativePlugin, NativeHttpRequest, NativeHttpResponse } from './definitions';
 export declare class LnurlNativeWeb extends WebPlugin implements LnurlNativePlugin {
-    owned(): Promise<{
-        receiver: any;
-    } | {
-        error: string;
-    }>;
-    addresses(): Promise<{
-        addresses: any[];
-    } | {
-        error: string;
-    }>;
-    sessionLnurl(): Promise<{
-        lnurl: string;
-    } | {
-        error: string;
-    }>;
-    capabilities(): Promise<{
-        capabilities: any;
-    } | {
-        error: string;
-    }>;
+    request(_options: NativeHttpRequest): Promise<NativeHttpResponse>;
 }
