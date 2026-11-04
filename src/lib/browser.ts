@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core'
+
 export const isMobileBrowser: boolean = 'ontouchstart' in window || Boolean(navigator.maxTouchPoints)
 
 export const isIOS = (): boolean => {
@@ -11,6 +13,10 @@ export const isAndroid = (): boolean => {
 }
 
 export const isInAppBrowser = (): boolean => {
+  // Capacitor's Android WebView exposes the generic "; wv)" marker, but this is
+  // our own app shell, not a third-party in-app browser.
+  if (Capacitor.isNativePlatform()) return false
+
   const ua = navigator.userAgent || navigator.vendor || (window as any).opera || ''
 
   // Known in-app browser tokens (sorted by global user base)
