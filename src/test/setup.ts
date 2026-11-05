@@ -52,6 +52,10 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {})
 })
 
-afterEach(() => {
+afterEach(async () => {
+  if (hasDom) {
+    const { toast } = await import('sonner')
+    toast.dismiss()
+  }
   vi.restoreAllMocks()
 })
