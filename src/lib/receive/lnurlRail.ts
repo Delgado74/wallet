@@ -314,7 +314,7 @@ export function useLnurlRail(deps: {
           setError(lnurlClaimErrorMessage(result.capabilitiesError, currentTranslation.current))
         }
         if (result.claimed) {
-          result.receiver.sync().catch((err) => consoleError(err, 'lnurl activity sync after claim failed'))
+          result.receiver.sync().catch((err: unknown) => consoleError(err, 'lnurl activity sync after claim failed'))
         }
       }
     }

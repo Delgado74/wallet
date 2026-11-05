@@ -8,12 +8,14 @@ export function useCopyToClipboard(): (value: string) => Promise<boolean> {
 
   return async (value: string) => {
     try {
-      await copyToClipboard(value)
-      toast(t('common.copiedToClipboard'))
-      return true
+      if (await copyToClipboard(value)) {
+        toast(t('common.copiedToClipboard'))
+        return true
+      }
     } catch {
-      toast(t('common.failedToCopy'))
-      return false
+      // fall through to the failure toast
     }
+    toast(t('common.failedToCopy'))
+    return false
   }
 }
