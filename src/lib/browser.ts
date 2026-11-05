@@ -1,5 +1,7 @@
 import { Capacitor } from '@capacitor/core'
 
+export const isNativePlatform = (): boolean => Capacitor.isNativePlatform()
+
 export const isMobileBrowser: boolean = 'ontouchstart' in window || Boolean(navigator.maxTouchPoints)
 
 export const isIOS = (): boolean => {
