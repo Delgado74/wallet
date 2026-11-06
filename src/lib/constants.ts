@@ -21,9 +21,19 @@ export const enableChainSwapsReceive = import.meta.env.VITE_CHAIN_SWAPS_RECEIVE_
 export const fromRuntimeEnv = (value: string | undefined): string | undefined =>
   value && !value.startsWith('__VITE_') ? value : undefined
 
+// Local rather than ./browser so node-environment tests can import constants
+// without a window; Capacitor exposes isNativePlatform on window.Capacitor.
+const isNativePlatform = (): boolean =>
+  typeof window !== 'undefined' && Boolean((window as any).Capacitor?.isNativePlatform?.())
+
 export const defaultArkServer = () => {
   const arkServer = fromRuntimeEnv(import.meta.env.VITE_ARK_SERVER)
   if (arkServer) return arkServer
+  if (typeof window === 'undefined') return mainServer
+  // Capacitor serves the app from https://localhost, which would otherwise be
+  // mistaken for the local dev server. Native builds default to mainnet unless
+  // VITE_ARK_SERVER names a server explicitly.
+  if (isNativePlatform()) return mainServer
   for (const domain of testDomains) {
     if (window.location.hostname.includes(domain)) {
       return window.location.hostname.includes('localhost') ? devServer : testServer

@@ -1,5 +1,7 @@
 import { afterEach, describe, it, expect, vi } from 'vitest'
-import { getSolverRegistryUrl, isMainnet } from '../../lib/constants'
+import { defaultArkServer, devServer, getSolverRegistryUrl, isMainnet, mainServer } from '../../lib/constants'
+
+const stubNative = () => vi.stubGlobal('Capacitor', { isNativePlatform: () => true })
 
 describe('isMainnet', () => {
   it('returns true for bitcoin and unrecognized networks', () => {
@@ -42,5 +44,33 @@ describe('getSolverRegistryUrl', () => {
   it('reads an unsubstituted runtime placeholder as no override, not a URL', () => {
     vi.stubEnv('VITE_SOLVER_REGISTRY_URL', '__VITE_SOLVER_REGISTRY_URL__')
     expect(getSolverRegistryUrl('bitcoin')).toBe('https://arkade-os.github.io/solver-registry/bitcoin.json')
+  })
+})
+
+describe('defaultArkServer', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
+  })
+
+  it('uses the local dev server for localhost on the web', () => {
+    expect(defaultArkServer()).toBe(devServer)
+  })
+
+  it('does not mistake the Capacitor localhost WebView for the dev server', () => {
+    stubNative()
+    expect(defaultArkServer()).toBe(mainServer)
+  })
+
+  it('honours VITE_ARK_SERVER on native', () => {
+    stubNative()
+    vi.stubEnv('VITE_ARK_SERVER', 'https://example.test')
+    expect(defaultArkServer()).toBe('https://example.test')
+  })
+
+  it('reads an unsubstituted runtime placeholder as no override on native', () => {
+    stubNative()
+    vi.stubEnv('VITE_ARK_SERVER', '__VITE_ARK_SERVER__')
+    expect(defaultArkServer()).toBe(mainServer)
   })
 })
